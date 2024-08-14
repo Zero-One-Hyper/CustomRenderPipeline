@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96c4c7bd7d652dd43b462265f871011d, type: 3}
+  m_Name: Custom Post FX Settings Camera2
+  m_EditorClassIdentifier: 
+  shader: {fileID: 4800000, guid: 9f7621bbdc3a53044aa30a8dc6857682, type: 3}
+  bloomSettings:
+    maxIterations: 16
+    downScaleLimit: 16
+    bloomBicubicUpsampling: 1
+    threshold: 1
+    thresholdKnee: 0.5
+    intensity: 0.27
+    fadeFireflies: 1
+    bloomMode: 1
+    scatter: 0.717
+  toneMappingSetting:
+    toneMappingMode: 1
+  colorAdjustmentsSettings:
+    postExposure: 0
+    contrast: 0
+    colorFilter: {r: 1, g: 1, b: 1, a: 1}
+    hueShift: 0
+    saturation: 0
+  whiteBalanceSettings:
+    temperature: 0
+    tint: 0
+  splitToningSettings:
+    shadows: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    highlights: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    balance: 0
+  channelMixerSettings:
+    red: {x: 1.33, y: 0, z: 0}
+    green: {x: 0, y: 0.79, z: 0}
+    blue: {x: 0, y: 0, z: 1.49}
+  shadowsMidtonesHighLightsSettings:
+    shadow: {r: 0.4245283, g: 0.4025009, b: 0.4025009, a: 1}
+    midTone: {r: 0.9339623, g: 0.9339623, b: 0.9339623, a: 1}
+    highLights: {r: 1, g: 1, b: 1, a: 1}
+    shadowsStart: 0
+    shadowsEnd: 0.223
+    highLightsStart: 0.55
+    highLightsEnd: 1
