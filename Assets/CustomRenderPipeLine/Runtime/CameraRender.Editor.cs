@@ -25,7 +25,8 @@ public partial class CameraRender
     //用于在Editor下存储Camera名为样本名，就不需要多分配内存了
     private string SampleName { get; set; }
 
-    private partial void DrawUnsupportedShaders()
+    //使用RenderGraph后完全由editor控制 便不再需要partical
+    public void DrawUnsupportedShaders()
     {
         if (_errorMaterial == null)
         {

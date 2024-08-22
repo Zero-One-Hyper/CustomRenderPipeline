@@ -131,14 +131,17 @@ public partial class PostFXStack
         this._bicubicScaling = bicubicScaling;
         this._fxaa = fxaa;
 
-        //填充bloom亮度阈值
-        //b为亮度 t为阈值 k是拐点(knee)
-        // w = (max(s, b-t)) / (max(b, 0.00001))
-        //其中 s = (min(max(0, b - t + tk), 2tk)^2) / (4tk + 0.00001)
-        _threshold.x = Mathf.GammaToLinearSpace(postFXSettings.BloomSetting.threshold);
-        _threshold.y = _threshold.x * postFXSettings.BloomSetting.thresholdKnee;
-        _threshold.z = 2.0f * _threshold.y;
-        _threshold.w = 0.25f / (_threshold.y + 0.00001f);
+        if (_postFXSettings != null)
+        {
+            //填充bloom亮度阈值
+            //b为亮度 t为阈值 k是拐点(knee)
+            // w = (max(s, b-t)) / (max(b, 0.00001))
+            //其中 s = (min(max(0, b - t + tk), 2tk)^2) / (4tk + 0.00001)
+            _threshold.x = Mathf.GammaToLinearSpace(postFXSettings.BloomSetting.threshold);
+            _threshold.y = _threshold.x * postFXSettings.BloomSetting.thresholdKnee;
+            _threshold.z = 2.0f * _threshold.y;
+            _threshold.w = 0.25f / (_threshold.y + 0.00001f);
+        }
 
         ApplySceneViewState();
     }

@@ -39,7 +39,7 @@ public partial class CameraRender
     //为相机使用单个缓冲区（包括颜色和深度）
     //private static int FrameBufferID = UnityEngine.Shader.PropertyToID("CameraFrameBuffer");
     //分别定义颜色缓冲和深度缓冲 分开二者
-    private static int _colorAttachmentID = UnityEngine.Shader.PropertyToID("_CameraColorAttachment");
+    public static int _colorAttachmentID = UnityEngine.Shader.PropertyToID("_CameraColorAttachment");
     public static int _depthAttachmentID = UnityEngine.Shader.PropertyToID("_CameraDepthAttachment");
 
     private static int _colorTextureID = UnityEngine.Shader.PropertyToID("_CameraColorTexture");
@@ -160,24 +160,7 @@ public partial class CameraRender
         //将绘制命令存入命令缓存区中
         DrawVisibleGeometry(useDynamicBaching, useGPUInstancing, useLightPerObject,
             cameraSettings.renderingLayerMask);
-        //针对不受支持的Shader的渲染代码放入了CamraRender.Edior中定义
-        //绘制不受支持的Shader 
-        DrawUnsupportedShaders(); //使用了partial定义
 
-        //绘制gizmos后绘制后处理
-        if (_postFXStack.IsActive)
-        {
-            _postFXStack.Render(_colorAttachmentID);
-        }
-
-        /*
-        else if (useIntermediateBuffer)
-        {
-            //之前的方式知识简单的Copy了贴图，并没有考虑到不使用后处理时透明度的处理以及第二个相机不铺满屏幕
-            DrawFinal(cameraSettings.finalBlendMode);
-            ExecuteCommandBuffer();
-        }
-        */
         var renderGraphParameters = new RenderGraphParameters()
         {
             commandBuffer = CommandBufferPool.Get(),
@@ -190,14 +173,19 @@ public partial class CameraRender
         using (renderGraph.RecordAndExecute(renderGraphParameters))
         {
             //rendergraph的过程
+            //绘制不受支持的Shader 
+            UnSupportedShadersPass.Recode(renderGraph, this);
+            //后处理
             if (_postFXStack.IsActive)
             {
+                PostFXPass.Record(renderGraph, this._postFXStack);
             }
             else if (useIntermediateBuffer)
             {
                 FinalPass.Record(renderGraph, this, cameraSettings.finalBlendMode);
             }
 
+            //绘制gizmos后绘制后处理
             //后处理后绘制Gizmos(绘制gizmos的地方换到了RenderGraphy)
             GizmosPass.Record(renderGraph, this);
         }
@@ -430,9 +418,10 @@ public partial class CameraRender
         CoreUtils.Destroy(_missingTexture);
     }
 
+    /*不再需要partial
     //使用partial只声明方法
-    private partial void DrawUnsupportedShaders();
-
+    public partial void DrawUnsupportedShaders();
+    */
     /*旧的未使用renderGraphy的绘制Gizmos
     private partial void DrawGizmosBeforeFX();
     private partial void DrawGizmosAfterFX();
