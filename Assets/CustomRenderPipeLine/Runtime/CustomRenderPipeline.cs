@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering.RenderGraphModule; //使用实验性功能 renderGraph
 
 public partial class CustomRenderPipeline : RenderPipeline
 {
@@ -38,6 +39,9 @@ public partial class CustomRenderPipeline : RenderPipeline
 
     private PostFXSettings _postFXSettings;
 
+    //RenderGraph 一种管理各个feature引用的资源及使用的pass 对渲染管线中存在的耦合问题进行解耦合
+    private readonly RenderGraph _renderGraph = new RenderGraph("Custom SRP Render Graph");
+
     private int _colorLUTResolution;
 
     //unity每帧都会调用渲染管线的Render方法
@@ -46,11 +50,13 @@ public partial class CustomRenderPipeline : RenderPipeline
     {
         for (int i = 0; i < cameras.Length; i++)
         {
-            _renderer.Render(context, cameras[i],
+            _renderer.Render(_renderGraph, context, cameras[i],
                 _useDynamicBaching, _useGPUInstancing, _useLightPerObject,
                 _cameraBufferSettings, _shadowSettings, _postFXSettings,
                 _colorLUTResolution);
         }
+
+        _renderGraph.EndFrame();
     }
 
     //一个list版本的Render
@@ -62,6 +68,7 @@ public partial class CustomRenderPipeline : RenderPipeline
         base.Dispose(disposing);
         DisposeForEditor();
         _renderer.Dispose();
+        _renderGraph.Cleanup();
     }
 
     private partial void InitializeForEditor();

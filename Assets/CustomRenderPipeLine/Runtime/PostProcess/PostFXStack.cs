@@ -81,7 +81,6 @@ public partial class PostFXStack
 
     //最终混合模式
     private int _finalSrcBlendID = UnityEngine.Shader.PropertyToID("_FinalSrcBlend");
-
     private int _finalDstBlendID = UnityEngine.Shader.PropertyToID("_FinalDstBlend");
 
     //双三次采样

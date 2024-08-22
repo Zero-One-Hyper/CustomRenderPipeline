@@ -9,6 +9,8 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Sphere_HighLight
   m_Shader: {fileID: 4800000, guid: 46f2b80931c6171498b5b3d4ec75b5da, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords:
   - _NORMAL_MAP
@@ -18,6 +20,7 @@ Material:
   m_CustomRenderQueue: 2001
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -46,7 +49,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EmissionMap:
-        m_Texture: {fileID: 2800000, guid: 57278e178399ce045bbaa6e99792a7e9, type: 3}
+        m_Texture: {fileID: 2800000, guid: 3d7c83b9766eb8646ae221cad3ddd4c4, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
@@ -106,6 +109,6 @@ Material:
     m_Colors:
     - _BaseColor: {r: 0, g: 0, b: 0, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _EmissionColor: {r: 8, g: 8, b: 8, a: 1}
-    - _MainColor: {r: 1, g: 0.054767355, b: 0, a: 1}
+    - _EmissionColor: {r: 16, g: 16, b: 16, a: 1}
+    - _MainColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

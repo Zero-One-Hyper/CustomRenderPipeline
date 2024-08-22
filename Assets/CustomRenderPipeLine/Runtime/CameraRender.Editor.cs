@@ -33,7 +33,7 @@ public partial class CameraRender
             _errorMaterial = new Material(UnityEngine.Shader.Find("Hidden/Core/FallbackError"));
         }
 
-        var sortingSettings = new SortingSettings(this._camera);
+        var sortingSettings = new SortingSettings(this.camera);
         var filteringSettings = FilteringSettings.defaultValue;
         var drawingSettings = new DrawingSettings(legacyShaderTagIds[0], sortingSettings)
         {
@@ -48,51 +48,52 @@ public partial class CameraRender
         this._context.DrawRenderers(this._cullingResults, ref drawingSettings, ref filteringSettings);
     }
 
+    /*旧的未使用renderGraphy的绘制Gizmos
     private partial void DrawGizmosBeforeFX()
     {
-        if (!Handles.ShouldRenderGizmos() || _camera.sceneViewFilterMode == Camera.SceneViewFilterMode.ShowFiltered)
+        if (!Handles.ShouldRenderGizmos() || camera.sceneViewFilterMode == Camera.SceneViewFilterMode.ShowFiltered)
         {
             return;
         }
 
         if (Handles.ShouldRenderGizmos())
         {
-            if (_useIntermediateBuffer)
+            if (useIntermediateBuffer)
             {
                 Draw(_depthAttachmentID, BuiltinRenderTextureType.CameraTarget, true);
                 ExecuteCommandBuffer();
             }
         }
 
-        _context.DrawGizmos(_camera, GizmoSubset.PreImageEffects);
+        _context.DrawGizmos(camera, GizmoSubset.PreImageEffects);
     }
 
     private partial void DrawGizmosAfterFX()
     {
-        if (!Handles.ShouldRenderGizmos() || _camera.sceneViewFilterMode == Camera.SceneViewFilterMode.ShowFiltered)
+        if (!Handles.ShouldRenderGizmos() || camera.sceneViewFilterMode == Camera.SceneViewFilterMode.ShowFiltered)
         {
             return;
         }
 
         if (Handles.ShouldRenderGizmos())
         {
-            if (_useIntermediateBuffer)
+            if (useIntermediateBuffer)
             {
                 Draw(_depthAttachmentID, BuiltinRenderTextureType.CameraTarget, true);
                 ExecuteCommandBuffer();
             }
         }
 
-        _context.DrawGizmos(_camera, GizmoSubset.PostImageEffects);
+        _context.DrawGizmos(camera, GizmoSubset.PostImageEffects);
     }
-
+    */
     private partial void PrepareForSceneWindow()
     {
-        if (_camera.cameraType == CameraType.SceneView)
+        if (camera.cameraType == CameraType.SceneView)
         {
             //当摄像机类型为场景相机时，使用这个场景相机渲染
             //将 UI 几何体发出到 Scene 视图中进行渲染。
-            ScriptableRenderContext.EmitWorldGeometryForSceneView(_camera);
+            ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
             _useRenderScaledRendering = false; //不希望渲染缩放影响scene相机
         }
     }
@@ -100,7 +101,7 @@ public partial class CameraRender
     private partial void PrepareBuffer()
     {
         Profiler.BeginSample("Editor Only");
-        _commandBuffer.name = SampleName = this._camera.name;
+        _commandBuffer.name = SampleName = this.camera.name;
         Profiler.EndSample();
     }
 

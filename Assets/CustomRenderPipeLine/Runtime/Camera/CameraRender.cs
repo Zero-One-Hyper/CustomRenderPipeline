@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering.RenderGraphModule;
 
 //使用一个CameraRender类来专门对每个摄像机进行渲染
 //目的为了将摄像机能看到的东西画出来
@@ -39,12 +40,16 @@ public partial class CameraRender
     //private static int FrameBufferID = UnityEngine.Shader.PropertyToID("CameraFrameBuffer");
     //分别定义颜色缓冲和深度缓冲 分开二者
     private static int _colorAttachmentID = UnityEngine.Shader.PropertyToID("_CameraColorAttachment");
-    private static int _depthAttachmentID = UnityEngine.Shader.PropertyToID("_CameraDepthAttachment");
+    public static int _depthAttachmentID = UnityEngine.Shader.PropertyToID("_CameraDepthAttachment");
 
     private static int _colorTextureID = UnityEngine.Shader.PropertyToID("_CameraColorTexture");
     private static int _depthTextureID = UnityEngine.Shader.PropertyToID("_CameraDepthTexture");
 
-    private static int _sourceTexture = UnityEngine.Shader.PropertyToID("_SourceTexture");
+    private static int _sourceTextureID = UnityEngine.Shader.PropertyToID("_SourceTexture");
+
+    //最终混合模式
+    private int _finalSrcBlendID = UnityEngine.Shader.PropertyToID("_FinalSrcBlend");
+    private int _finalDstBlendID = UnityEngine.Shader.PropertyToID("_FinalDstBlend");
 
     private CommandBuffer _commandBuffer = new CommandBuffer()
     {
@@ -52,19 +57,20 @@ public partial class CameraRender
     };
 
     private static CameraSettings _defaultCameraSettings = new CameraSettings();
+    private static Rect _fullViewRect = new Rect(0f, 0f, 1f, 1f);
 
     private CullingResults _cullingResults;
     private ScriptableRenderContext _context;
-    private Camera _camera;
+    public Camera camera;
     private Lighting _lighting = new Lighting();
     private PostFXStack _postFXStack = new PostFXStack();
     private Material _cameraRendererMaterial;
     private Texture2D _missingTexture; //确保采样深度纹理时至少有正确的纹理存在
 
     private bool _useHDR;
-    private bool _useColorTexture;
-    private bool _useDepthTexture;
-    private bool _useIntermediateBuffer; //在不使用postFX时依旧可以使用深度纹理
+    public bool useColorTexture;
+    public bool useDepthTexture;
+    public bool useIntermediateBuffer; //在不使用postFX时依旧可以使用深度纹理
     private bool _useRenderScaledRendering;
 
     //诸如WebGL上不能使用CopyTexture的平台使用着色器复制
@@ -72,29 +78,29 @@ public partial class CameraRender
 
     private Vector2Int _bufferSize;
 
-    public void Render(ScriptableRenderContext context, Camera camera,
+    public void Render(RenderGraph renderGraph, ScriptableRenderContext context, Camera camera,
         bool useDynamicBaching, bool useGPUInstancing, bool useLightPerObject,
         CameraBufferSettings cameraBufferSettings, ShadowSettings shadowSettings, PostFXSettings postFXSettings,
         int colorLUTResolution)
     {
         this._context = context;
-        this._camera = camera;
+        this.camera = camera;
 
         var customRenderPipelineCamera = camera.GetComponent<CustomRenderPipelineCamera>();
         CameraSettings cameraSettings = customRenderPipelineCamera
             ? customRenderPipelineCamera.CameraSetting
             : _defaultCameraSettings;
 
-        if (_camera.cameraType == CameraType.Reflection)
+        if (this.camera.cameraType == CameraType.Reflection)
         {
             //用于渲染反射探针的摄像机
-            _useColorTexture = cameraBufferSettings.copyColorReflections;
-            _useDepthTexture = cameraBufferSettings.copyDepthReflections;
+            useColorTexture = cameraBufferSettings.copyColorReflections;
+            useDepthTexture = cameraBufferSettings.copyDepthReflections;
         }
         else
         {
-            _useColorTexture = cameraBufferSettings.copyColor && cameraSettings.copyColor;
-            _useDepthTexture = cameraBufferSettings.copyDepth && cameraSettings.copyDepth;
+            useColorTexture = cameraBufferSettings.copyColor && cameraSettings.copyColor;
+            useDepthTexture = cameraBufferSettings.copyDepth && cameraSettings.copyDepth;
         }
 
         if (cameraSettings.overridePostFX)
@@ -119,13 +125,13 @@ public partial class CameraRender
         if (_useRenderScaledRendering)
         {
             renderScale = Mathf.Clamp(renderScale, RenderScaleMin, RenderScaleMax);
-            _bufferSize.x = (int)(_camera.pixelWidth * renderScale);
-            _bufferSize.y = (int)(_camera.pixelHeight * renderScale);
+            _bufferSize.x = (int)(this.camera.pixelWidth * renderScale);
+            _bufferSize.y = (int)(this.camera.pixelHeight * renderScale);
         }
         else
         {
-            _bufferSize.x = _camera.pixelWidth;
-            _bufferSize.y = _camera.pixelHeight;
+            _bufferSize.x = this.camera.pixelWidth;
+            _bufferSize.y = this.camera.pixelHeight;
         }
 
         //多个相机时，使相机的样本明分开
@@ -142,7 +148,7 @@ public partial class CameraRender
             useLightPerObject, cameraSettings.maskLights ? cameraSettings.renderingLayerMask : -1);
         //
         cameraBufferSettings.fxaa.enable &= cameraSettings.allowFXAA;
-        _postFXStack.SetUp(this._context, this._camera, postFXSettings, this._useHDR, cameraSettings.keepAlpha,
+        _postFXStack.SetUp(this._context, this.camera, postFXSettings, this._useHDR, cameraSettings.keepAlpha,
             colorLUTResolution, _bufferSize,
             cameraSettings.finalBlendMode, cameraBufferSettings.bicubicRescaling,
             cameraBufferSettings.fxaa);
@@ -157,45 +163,63 @@ public partial class CameraRender
         //针对不受支持的Shader的渲染代码放入了CamraRender.Edior中定义
         //绘制不受支持的Shader 
         DrawUnsupportedShaders(); //使用了partial定义
-        //后处理前绘制Gizmos
-        DrawGizmosBeforeFX();
+
         //绘制gizmos后绘制后处理
         if (_postFXStack.IsActive)
         {
             _postFXStack.Render(_colorAttachmentID);
         }
-        else if (_useIntermediateBuffer)
-        {
-            if (_camera.targetTexture)
-            {
-                _commandBuffer.CopyTexture(_colorAttachmentID, _camera.targetTexture);
-            }
-            else
-            {
-                this.Draw(_colorAttachmentID, BuiltinRenderTextureType.CameraTarget);
-            }
 
+        /*
+        else if (useIntermediateBuffer)
+        {
+            //之前的方式知识简单的Copy了贴图，并没有考虑到不使用后处理时透明度的处理以及第二个相机不铺满屏幕
+            DrawFinal(cameraSettings.finalBlendMode);
             ExecuteCommandBuffer();
         }
+        */
+        var renderGraphParameters = new RenderGraphParameters()
+        {
+            commandBuffer = CommandBufferPool.Get(),
+            currentFrameIndex = Time.frameCount,
+            executionName = "Render Camera",
+            scriptableRenderContext = this._context,
+        };
 
-        //后处理后绘制Gizmos
-        DrawGizmosAfterFX();
+        //放在using中可以简单的不使用.Dispose() 相当于一个try块，finally中会调用dispose
+        using (renderGraph.RecordAndExecute(renderGraphParameters))
+        {
+            //rendergraph的过程
+            if (_postFXStack.IsActive)
+            {
+            }
+            else if (useIntermediateBuffer)
+            {
+                FinalPass.Record(renderGraph, this, cameraSettings.finalBlendMode);
+            }
+
+            //后处理后绘制Gizmos(绘制gizmos的地方换到了RenderGraphy)
+            GizmosPass.Record(renderGraph, this);
+        }
+
+
         //在命令提交之前请求清理
         this.CleanUp();
         //提交context(只有我们提交context，才会真正开始渲染)
         Submit();
+        CommandBufferPool.Release(renderGraphParameters.commandBuffer);
     }
 
     private void SetUp()
     {
         //这一步用来将摄像机的属性应用到context上，渲染天空盒的时候主要是设置VP矩阵（unity_MatrixVP）
-        _context.SetupCameraProperties(this._camera); //有了这个指令在scene中选中摄像机时才不会黑屏
+        _context.SetupCameraProperties(this.camera); //有了这个指令在scene中选中摄像机时才不会黑屏
         //清除标志位 写了这个在FrameDebug中才会显示 Clear(Color + z + stencil)
-        CameraClearFlags flags = _camera.clearFlags;
+        CameraClearFlags flags = camera.clearFlags;
 
-        _useIntermediateBuffer = _useRenderScaledRendering || _useColorTexture ||
-                                 _useDepthTexture || _postFXStack.IsActive;
-        if (_useIntermediateBuffer)
+        useIntermediateBuffer = _useRenderScaledRendering || useColorTexture ||
+                                useDepthTexture || _postFXStack.IsActive;
+        if (useIntermediateBuffer)
         {
             if (flags > CameraClearFlags.Color)
             {
@@ -221,7 +245,7 @@ public partial class CameraRender
         _commandBuffer.ClearRenderTarget(
             flags <= CameraClearFlags.Depth,
             flags <= CameraClearFlags.Color,
-            flags == CameraClearFlags.Color ? _camera.backgroundColor.linear : Color.clear);
+            flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
         //注射分析样本 以便在FrameDebug中显示
         _commandBuffer.BeginSample(SampleName);
         _commandBuffer.SetGlobalTexture(_colorTextureID, _missingTexture);
@@ -230,12 +254,32 @@ public partial class CameraRender
         ExecuteCommandBuffer();
     }
 
-    private void Draw(RenderTargetIdentifier from, RenderTargetIdentifier to, bool isDepth = false)
+    public void Draw(RenderTargetIdentifier from, RenderTargetIdentifier to, bool isDepth = false)
     {
-        _commandBuffer.SetGlobalTexture(_sourceTexture, from);
+        _commandBuffer.SetGlobalTexture(_sourceTextureID, from);
         _commandBuffer.SetRenderTarget(to, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
         _commandBuffer.DrawProcedural(Matrix4x4.identity, _cameraRendererMaterial,
             isDepth ? 1 : 0, MeshTopology.Triangles, 3);
+    }
+
+    public void DrawFinal(CameraSettings.FinalBlendMode finalBlendMode)
+    {
+        _commandBuffer.SetGlobalFloat(_finalSrcBlendID, (float)finalBlendMode.source);
+        _commandBuffer.SetGlobalFloat(_finalDstBlendID, (float)finalBlendMode.destination);
+        _commandBuffer.SetGlobalTexture(_sourceTextureID, _colorAttachmentID);
+        _commandBuffer.SetRenderTarget(
+            BuiltinRenderTextureType.CameraTarget,
+            finalBlendMode.destination == BlendMode.Zero && camera.rect == _fullViewRect
+                ? RenderBufferLoadAction.DontCare
+                : RenderBufferLoadAction.Load,
+            RenderBufferStoreAction.Store
+        );
+        _commandBuffer.SetViewport(camera.pixelRect);
+        _commandBuffer.DrawProcedural(
+            Matrix4x4.identity, _cameraRendererMaterial, 0, MeshTopology.Triangles, 3
+        );
+        _commandBuffer.SetGlobalFloat(_finalSrcBlendID, 1f);
+        _commandBuffer.SetGlobalFloat(_finalDstBlendID, 0f);
     }
 
     //顾名思义使用这个方法实现绘制摄像机看到的东西
@@ -245,7 +289,7 @@ public partial class CameraRender
         PerObjectData lightsPerObjectFlag =
             useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
         //知道什么东西会被剔除后，就可以继续渲染了
-        var sortingSettings = new SortingSettings(this._camera) //排序设置
+        var sortingSettings = new SortingSettings(this.camera) //排序设置
         {
             //设置排序条件
             criteria = SortingCriteria.CommonOpaque,
@@ -275,8 +319,8 @@ public partial class CameraRender
         this._context.DrawRenderers(this._cullingResults, ref drawingSettings, ref filteringSettings);
 
         //这个方法只会将绘制命令缓存到命令队列中，需要使用Submint方法提交工作队列来执行
-        this._context.DrawSkybox(this._camera);
-        if (_useColorTexture || _useDepthTexture)
+        this._context.DrawSkybox(this.camera);
+        if (useColorTexture || useDepthTexture)
         {
             CopyAttachments(); //绘制完天空盒后复制深度贴图
         }
@@ -299,7 +343,7 @@ public partial class CameraRender
     }
 
     //执行commandBuffer 并清除（执行和清除总是在一起做）
-    private void ExecuteCommandBuffer()
+    public void ExecuteCommandBuffer()
     {
         this._context.ExecuteCommandBuffer(this._commandBuffer);
         this._commandBuffer.Clear();
@@ -308,9 +352,9 @@ public partial class CameraRender
     private bool Cull(float maxShadowDistance)
     {
         ScriptableCullingParameters parameters;
-        if (this._camera.TryGetCullingParameters(false, out parameters))
+        if (this.camera.TryGetCullingParameters(false, out parameters))
         {
-            parameters.shadowDistance = Mathf.Min(maxShadowDistance, _camera.farClipPlane);
+            parameters.shadowDistance = Mathf.Min(maxShadowDistance, camera.farClipPlane);
             //使用context的Cull方法来进行剔除 (这里使用ref来避免对parmeters的拷贝，因为parameters可能很大）
             _cullingResults = _context.Cull(ref parameters);
             return true;
@@ -321,7 +365,7 @@ public partial class CameraRender
 
     private void CopyAttachments()
     {
-        if (_useColorTexture)
+        if (useColorTexture)
         {
             _commandBuffer.GetTemporaryRT(_colorTextureID, _bufferSize.x, _bufferSize.y,
                 0, FilterMode.Bilinear,
@@ -336,7 +380,7 @@ public partial class CameraRender
             }
         }
 
-        if (_useDepthTexture)
+        if (useDepthTexture)
         {
             _commandBuffer.GetTemporaryRT(_depthTextureID, _bufferSize.x, _bufferSize.y,
                 32, FilterMode.Point, RenderTextureFormat.Depth);
@@ -364,16 +408,16 @@ public partial class CameraRender
     private void CleanUp()
     {
         _lighting.CleanUp();
-        if (_useIntermediateBuffer)
+        if (useIntermediateBuffer)
         {
             _commandBuffer.ReleaseTemporaryRT(_colorAttachmentID);
             _commandBuffer.ReleaseTemporaryRT(_depthAttachmentID);
-            if (_useColorTexture)
+            if (useColorTexture)
             {
                 _commandBuffer.ReleaseTemporaryRT(_colorTextureID);
             }
 
-            if (_useDepthTexture)
+            if (useDepthTexture)
             {
                 _commandBuffer.ReleaseTemporaryRT(_depthTextureID);
             }
@@ -388,13 +432,15 @@ public partial class CameraRender
 
     //使用partial只声明方法
     private partial void DrawUnsupportedShaders();
+
+    /*旧的未使用renderGraphy的绘制Gizmos
     private partial void DrawGizmosBeforeFX();
     private partial void DrawGizmosAfterFX();
-
+    */
     //UI会被单独渲染，而不是通过我们的renderPipeline
     //但是在Scene窗口中需要我们明确地将ui添加到世界几何体中去
     private partial void PrepareForSceneWindow();
 
-    //使缓冲的名子和摄像机相同
+//使缓冲的名子和摄像机相同
     private partial void PrepareBuffer();
 }

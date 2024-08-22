@@ -4488,10 +4488,10 @@ MonoBehaviour:
     overridePostFX: 1
     postFXSettings: {fileID: 11400000, guid: 9404f3c8074bb3f4b9ef4dc126e028a9, type: 2}
     finalBlendMode:
-      source: 5
-      destination: 10
+      source: 1
+      destination: 0
     allowFXAA: 0
-    keepAlpha: 0
+    keepAlpha: 1
 --- !u!1 &738313061
 GameObject:
   m_ObjectHideFlags: 0
@@ -5624,6 +5624,7 @@ GameObject:
   m_Component:
   - component: {fileID: 867194943}
   - component: {fileID: 867194944}
+  - component: {fileID: 867194945}
   m_Layer: 0
   m_Name: Spot Light
   m_TagString: Untagged
@@ -5708,6 +5709,29 @@ Light:
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!114 &867194945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 867194942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 3
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_RenderingLayers: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_ShadowRenderingLayers: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
 --- !u!1 &867948139
 GameObject:
   m_ObjectHideFlags: 0
@@ -21361,6 +21385,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1911287920}
   - component: {fileID: 1911287921}
+  - component: {fileID: 1911287922}
   m_Layer: 0
   m_Name: Point Light
   m_TagString: Untagged
@@ -21445,6 +21470,29 @@ Light:
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!114 &1911287922
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1911287919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 3
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_RenderingLayers: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_ShadowRenderingLayers: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
 --- !u!1 &1932958859
 GameObject:
   m_ObjectHideFlags: 0
