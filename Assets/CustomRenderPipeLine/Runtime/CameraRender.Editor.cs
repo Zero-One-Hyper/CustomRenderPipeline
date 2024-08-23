@@ -7,31 +7,14 @@ public partial class CameraRender
 {
 #if UNITY_EDITOR
 
-    //为了支持绘制过时的渲染器
-    private static ShaderTagId[] legacyShaderTagIds =
-    {
-        new ShaderTagId("Always"),
-        new ShaderTagId("ForwardBase"),
-        new ShaderTagId("PrepassBase"),
-        new ShaderTagId("Vertex"),
-        new ShaderTagId("VertexLMRGBM"),
-        new ShaderTagId("VertexLM")
-    };
-
-    private Material _errorMaterial;
 
     //用于在Editor下存储Camera名为样本名，就不需要多分配内存了
     private string SampleName { get; set; }
 
+    /*
     //使用RenderGraph后完全由editor控制 便不再需要partical
     public void DrawUnsupportedShaders()
     {
-        if (_errorMaterial == null)
-        {
-            //给一个错误材质
-            _errorMaterial = new Material(UnityEngine.Shader.Find("Hidden/Core/FallbackError"));
-        }
-
         var sortingSettings = new SortingSettings(this.camera);
         var filteringSettings = FilteringSettings.defaultValue;
         var drawingSettings = new DrawingSettings(legacyShaderTagIds[0], sortingSettings)
@@ -46,7 +29,7 @@ public partial class CameraRender
 
         this._context.DrawRenderers(this._cullingResults, ref drawingSettings, ref filteringSettings);
     }
-
+    */
     private partial void PrepareForSceneWindow()
     {
         if (camera.cameraType == CameraType.SceneView)
@@ -58,16 +41,5 @@ public partial class CameraRender
         }
     }
 
-    /*
-    private partial void PrepareBuffer()
-    {
-        Profiler.BeginSample("Editor Only");
-        _commandBuffer.name = SampleName = this.camera.name;
-        Profiler.EndSample();
-    }
-    */
-
-//#else
-    //private const string SampleName = BUFFER_NAME;
 #endif
 }

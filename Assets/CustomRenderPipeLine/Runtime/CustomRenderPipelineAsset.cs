@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
 //https://zhuanlan.zhihu.com/p/693885113
 //https://catlikecoding.com/unity/tutorials/custom-srp/custom-render-pipeline/
@@ -7,13 +8,15 @@ using UnityEngine.Rendering;
 public partial class CustomRenderPipelineAsset : RenderPipelineAsset
 {
     [SerializeField]
-    private bool useSRPBacher = true;
+    private bool _useSRPBacher = true;
 
-    [SerializeField]
+    /*
+    [SerializeField]//使用RenderGraph时GPU实例化会始终开启
     private bool useGPUInstancing = true;
 
-    [SerializeField]
+    [SerializeField]//动态批处理在使用RenderGraph时始终禁用(过于古老，而且相比较SRP合批及GPU实例化实在过于逊色)
     private bool useDynamicBaching = false;
+    */
 
     [SerializeField]
     private bool useLightsPerObject;
@@ -53,8 +56,8 @@ public partial class CustomRenderPipelineAsset : RenderPipelineAsset
     //当Unity编辑器检测到这个asset改变时会创建一个新的渲染管线实例。
     protected override RenderPipeline CreatePipeline()
     {
-        return new CustomRenderPipeline(useDynamicBaching, useGPUInstancing, useSRPBacher,
-            useLightsPerObject, cameraBufferSettings, shadowSettings, postFXSettings,
+        return new CustomRenderPipeline(_useSRPBacher, useLightsPerObject,
+            cameraBufferSettings, shadowSettings, postFXSettings,
             (int)colorLutResolution, cameraRendererShader);
     }
 }

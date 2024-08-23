@@ -4,8 +4,7 @@ using UnityEngine.Experimental.Rendering.RenderGraphModule; //使用实验性功
 
 public partial class CustomRenderPipeline : RenderPipeline
 {
-    public CustomRenderPipeline(bool useDynamicBaching, bool useGPUInstancing, bool useSRPBacher,
-        bool useLightPerObject,
+    public CustomRenderPipeline(bool useSRPBacher, bool useLightPerObject,
         CameraBufferSettings cameraBufferSettings, ShadowSettings shadowSettings,
         PostFXSettings postFXSettings, int colorLUTResolution,
         UnityEngine.Shader cameraRendererShader)
@@ -16,8 +15,11 @@ public partial class CustomRenderPipeline : RenderPipeline
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBacher;
         //GPU实例化可以处理逐对象的材质属性
         //GPU实例化不需要手动开启
+        //使用RenderGraph时动态批处理将会始终关闭 GPU实例化将始终开启
+        /*
         this._useDynamicBaching = useDynamicBaching;
         this._useGPUInstancing = useGPUInstancing;
+        */
         this._useLightPerObject = useLightPerObject;
         this._cameraBufferSettings = cameraBufferSettings;
         //设置光照使用线性空间强度
@@ -29,8 +31,6 @@ public partial class CustomRenderPipeline : RenderPipeline
     }
 
     private CameraRender _renderer;
-    private bool _useDynamicBaching;
-    private bool _useGPUInstancing;
     private bool _useLightPerObject;
 
     private CameraBufferSettings _cameraBufferSettings;
@@ -51,9 +51,8 @@ public partial class CustomRenderPipeline : RenderPipeline
         for (int i = 0; i < cameras.Length; i++)
         {
             _renderer.Render(_renderGraph, context, cameras[i],
-                _useDynamicBaching, _useGPUInstancing, _useLightPerObject,
-                _cameraBufferSettings, _shadowSettings, _postFXSettings,
-                _colorLUTResolution);
+                _useLightPerObject, _cameraBufferSettings, _shadowSettings,
+                _postFXSettings, _colorLUTResolution);
         }
 
         _renderGraph.EndFrame();
