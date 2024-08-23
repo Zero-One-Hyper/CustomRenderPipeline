@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Experimental.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 
 public class Shadows
@@ -18,7 +19,7 @@ public class Shadows
         public bool isPoint;
     }
 
-    private const string BufferName = "Shadows";
+    //private const string BufferName = "Shadows";
 
     private const int MaxShadowsDirectionLightCount = 4;
     private const int MaxShadowsOtherLightCount = 16;
@@ -26,7 +27,8 @@ public class Shadows
     //最大级联阴影数
     private const int MaxCascades = 4;
 
-    private CommandBuffer _shadowBuffer = new CommandBuffer() { name = BufferName, };
+    //private CommandBuffer _shadowBuffer = new CommandBuffer() { name = BufferName, };
+    private CommandBuffer _shadowBuffer;
 
     private ScriptableRenderContext _context;
     private CullingResults _cullingResults;
@@ -112,9 +114,10 @@ public class Shadows
     private bool _useShadowMask;
     private Vector4 _shadowAtlasSize;
 
-    public void SetUp(ScriptableRenderContext context, CullingResults cullingResults, ShadowSettings shadowSettings)
+    public void SetUp(RenderGraphContext context, CullingResults cullingResults, ShadowSettings shadowSettings)
     {
-        this._context = context;
+        this._shadowBuffer = context.cmd;
+        this._context = context.renderContext;
         this._cullingResults = cullingResults;
         this._shadowSettings = shadowSettings;
         _shadowDirectionalLightCount = 0;
@@ -148,7 +151,7 @@ public class Shadows
             _shadowBuffer.SetGlobalTexture(_otherShadowAtlasID, _dirShadowAtlasID);
         }
 
-        _shadowBuffer.BeginSample(BufferName);
+        //_shadowBuffer.BeginSample(BufferName);
         SetShadowKeyWorlds(_shadowMaskKeyWords,
             _useShadowMask ? QualitySettings.shadowmaskMode == ShadowmaskMode.Shadowmask ? 0 : 1 : -1);
 
@@ -165,7 +168,7 @@ public class Shadows
 
         //图集尺寸 平行光存储在X分量中，纹素尺寸存储在Y分量中 其他光源的存储在z和w中
         _shadowBuffer.SetGlobalVector(_shadowAtlasSizeID, _shadowAtlasSize);
-        _shadowBuffer.EndSample(BufferName);
+        //_shadowBuffer.EndSample(BufferName);
         ExecuteBuffer();
     }
 
@@ -195,7 +198,7 @@ public class Shadows
 
         //开始渲染
         _shadowBuffer.SetGlobalFloat(_shadowPancakingID, 1.0f); //设置pancaking
-        _shadowBuffer.BeginSample(BufferName);
+        _shadowBuffer.BeginSample("Directional Shadows");
         //最多支持4个光源，分割2就是横轴纵轴二分即4块
         //再加上级联阴影的数量
         int tiles = _shadowDirectionalLightCount * _shadowSettings.directionalLight.cascadeCount;
@@ -215,7 +218,7 @@ public class Shadows
         SetShadowKeyWorlds(_directionalLightFilterKeyWords, (int)_shadowSettings.directionalLight.filter - 1);
         //软阴影 和 抖动混合 的keyWorld 
         SetShadowKeyWorlds(_cascadeBlendKeyWords, (int)_shadowSettings.directionalLight.cascadeBlend - 1);
-        _shadowBuffer.EndSample(BufferName);
+        _shadowBuffer.EndSample("Directional Shadows");
         ExecuteBuffer();
     }
 
@@ -238,7 +241,7 @@ public class Shadows
 
         //开始渲染
         _shadowBuffer.SetGlobalFloat(_shadowPancakingID, 0.0f);
-        _shadowBuffer.BeginSample(BufferName);
+        _shadowBuffer.BeginSample("Other Shadows");
         //最多支持4个光源，分割2就是横轴纵轴二分即4块
         //再加上级联阴影的数量
         int tiles = _shadowOtherLightCount;
@@ -263,7 +266,7 @@ public class Shadows
         _shadowBuffer.SetGlobalVectorArray(_otherShadowTilesID, _otherShadowTiles);
         //过滤模式keyworlds只有3个
         SetShadowKeyWorlds(_otherLightFilterKeyWords, (int)_shadowSettings.otherLight.filterMode - 1);
-        _shadowBuffer.EndSample(BufferName);
+        _shadowBuffer.EndSample("Other Shadows");
         ExecuteBuffer();
     }
 

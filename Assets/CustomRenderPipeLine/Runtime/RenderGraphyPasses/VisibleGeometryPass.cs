@@ -1,7 +1,9 @@
 using UnityEngine.Experimental.Rendering.RenderGraphModule;
+using UnityEngine.Rendering;
 
 public class VisibleGeometryPass
 {
+    private static ProfilingSampler _visibleGeometrySampler = new ProfilingSampler("VisibleGeometrySampler");
     private CameraRender _render;
 
     private bool _useDynamicBatching;
@@ -21,7 +23,7 @@ public class VisibleGeometryPass
         int renderingLayerMask)
     {
         using RenderGraphBuilder builder = renderGraph.AddRenderPass(
-            "Draw Visible Geometry", out VisibleGeometryPass visibleGeometryPass);
+            "Draw Visible Geometry", out VisibleGeometryPass visibleGeometryPass, _visibleGeometrySampler);
         visibleGeometryPass._render = render;
         visibleGeometryPass._useDynamicBatching = useDynamicBatching;
         visibleGeometryPass._useGPUInstancing = useGPUInstancing;

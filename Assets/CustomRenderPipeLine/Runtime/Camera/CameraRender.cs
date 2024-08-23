@@ -28,7 +28,7 @@ public partial class CameraRender
 
     //像绘制天空盒这样的命令可以通过特殊的方法来添加到命令队列中，但是其他的特殊命令不一定有对应的方法
     //使用独立的CommandBuffer来存储部分特殊命令并给出
-    private const string BUFFER_NAME = "Custom Render Camera";
+    //private const string BUFFER_NAME = "Custom Render Camera";
 
     public const float RenderScaleMin = 0.01f;
     public const float RenderScaleMax = 2.0f;
@@ -51,10 +51,13 @@ public partial class CameraRender
     private int _finalSrcBlendID = UnityEngine.Shader.PropertyToID("_FinalSrcBlend");
     private int _finalDstBlendID = UnityEngine.Shader.PropertyToID("_FinalDstBlend");
 
+    /*
     private CommandBuffer _commandBuffer = new CommandBuffer()
     {
         name = BUFFER_NAME,
     };
+    */
+    private CommandBuffer _commandBuffer;
 
     private static CameraSettings _defaultCameraSettings = new CameraSettings();
     private static Rect _fullViewRect = new Rect(0f, 0f, 1f, 1f);
@@ -78,18 +81,33 @@ public partial class CameraRender
 
     private Vector2Int _bufferSize;
 
-    public void Render(RenderGraph renderGraph, ScriptableRenderContext context, Camera camera,
+    public void Render(RenderGraph renderGraph, ScriptableRenderContext context, Camera renderCamera,
         bool useDynamicBatching, bool useGPUInstancing, bool useLightPerObject,
         CameraBufferSettings cameraBufferSettings, ShadowSettings shadowSettings, PostFXSettings postFXSettings,
         int colorLUTResolution)
     {
         this._context = context;
-        this.camera = camera;
+        this.camera = renderCamera;
 
-        var customRenderPipelineCamera = camera.GetComponent<CustomRenderPipelineCamera>();
+        /*
+        var customRenderPipelineCamera = renderCamera.GetComponent<CustomRenderPipelineCamera>();
         CameraSettings cameraSettings = customRenderPipelineCamera
             ? customRenderPipelineCamera.CameraSetting
             : _defaultCameraSettings;
+        */
+        ProfilingSampler cameraSampler;
+        CameraSettings cameraSettings;
+        if(renderCamera.TryGetComponent(out CustomRenderPipelineCamera customRenderPipelineCamera))
+        {
+            cameraSampler = customRenderPipelineCamera.Sampler;
+            cameraSettings = customRenderPipelineCamera.CameraSetting;
+        }
+        else
+        {
+            cameraSampler = ProfilingSampler.Get(camera.cameraType);
+            cameraSettings = _defaultCameraSettings;
+        }
+        
 
         if (this.camera.cameraType == CameraType.Reflection)
         {
@@ -121,7 +139,7 @@ public partial class CameraRender
             return;
         }
 
-        this._useHDR = cameraBufferSettings.allowHDR && camera.allowHDR;
+        this._useHDR = cameraBufferSettings.allowHDR && renderCamera.allowHDR;
         if (_useRenderScaledRendering)
         {
             renderScale = Mathf.Clamp(renderScale, RenderScaleMin, RenderScaleMax);
@@ -135,34 +153,38 @@ public partial class CameraRender
         }
 
         //多个相机时，使相机的样本明分开
-        PrepareBuffer();
+        //PrepareBuffer();
 
-        _commandBuffer.BeginSample(SampleName);
+        //_commandBuffer.BeginSample(SampleName);
 
-        ExecuteCommandBuffer();
+        //ExecuteCommandBuffer();
         //设置FX堆栈及验证FXAA
         cameraBufferSettings.fxaa.enable &= cameraSettings.allowFXAA;
-        _postFXStack.SetUp(this._context, this.camera, postFXSettings, this._useHDR, cameraSettings.keepAlpha,
+        _postFXStack.SetUp(this.camera, postFXSettings, this._useHDR, cameraSettings.keepAlpha,
             colorLUTResolution, _bufferSize,
             cameraSettings.finalBlendMode, cameraBufferSettings.bicubicRescaling,
             cameraBufferSettings.fxaa);
-        _commandBuffer.EndSample(SampleName);
+        //_commandBuffer.EndSample(SampleName);
         //将是否使用中间纹理挪到setup外面来
         useIntermediateBuffer = _useRenderScaledRendering || useColorTexture ||
                                 useDepthTexture || _postFXStack.IsActive;
 
+       
         var renderGraphParameters = new RenderGraphParameters()
         {
             commandBuffer = CommandBufferPool.Get(),
             currentFrameIndex = Time.frameCount,
-            executionName = "Render Camera",
+            executionName = cameraSampler.name,
             scriptableRenderContext = this._context,
         };
+        _commandBuffer = renderGraphParameters.commandBuffer;
 
         //使用RenderGraph使所有命令缓冲的执行和渲染都在其中进行
         //放在using中可以简单的不使用.Dispose() 相当于一个try块，finally中会调用dispose
         using (renderGraph.RecordAndExecute(renderGraphParameters))
         {
+            //做一个记录步骤 不需要手动在任何地方访问它
+            using var _ = new RenderGraphProfilingScope(renderGraph, cameraSampler);
             //rendergraph的过程
             //光照设置
             LightingPass.Recode(renderGraph, _lighting, _cullingResults, shadowSettings,
@@ -234,7 +256,7 @@ public partial class CameraRender
             flags <= CameraClearFlags.Color,
             flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
         //注射分析样本 以便在FrameDebug中显示
-        _commandBuffer.BeginSample(SampleName);
+        //_commandBuffer.BeginSample(SampleName);
         _commandBuffer.SetGlobalTexture(_colorTextureID, _missingTexture);
         _commandBuffer.SetGlobalTexture(_depthTextureID, _missingTexture);
 
@@ -275,9 +297,12 @@ public partial class CameraRender
     }
 
     //顾名思义使用这个方法实现绘制摄像机看到的东西
-    public void DrawVisibleGeometry(bool useDynamicBaching, bool useGPUInstancing, bool useLightsPerObject,
+    public void DrawVisibleGeometry(bool useDynamicBatching, bool useGPUInstancing, bool useLightsPerObject,
         int renderingLayerMask)
     {
+        //RenderGraph只在buffer上调用beginSample和endSample，但是不执行
+        //所以执行buffer并清空
+        ExecuteCommandBuffer();
         PerObjectData lightsPerObjectFlag =
             useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
         //知道什么东西会被剔除后，就可以继续渲染了
@@ -290,7 +315,7 @@ public partial class CameraRender
         var drawingSettings = new DrawingSettings(_shaderTagId[0], sortingSettings)
         {
             //若要使用动态合批，需要关闭gpuInstancing，并关闭SRP合批（因为他会优先生效）
-            enableDynamicBatching = useDynamicBaching,
+            enableDynamicBatching = useDynamicBatching,
             enableInstancing = useGPUInstancing,
             //告诉管线将光照贴图的UV发送到着色器
             perObjectData = PerObjectData.ReflectionProbes |
@@ -328,7 +353,7 @@ public partial class CameraRender
     private void Submit()
     {
         //结束注射分析样本 以便在FrameDebug中显示
-        _commandBuffer.EndSample(SampleName);
+        //_commandBuffer.EndSample(SampleName);
 
         ExecuteCommandBuffer();
         this._context.Submit();
@@ -426,6 +451,6 @@ public partial class CameraRender
     //但是在Scene窗口中需要我们明确地将ui添加到世界几何体中去
     private partial void PrepareForSceneWindow();
 
-//使缓冲的名子和摄像机相同
-    private partial void PrepareBuffer();
+    //使缓冲的名子和摄像机相同
+    //private partial void PrepareBuffer();
 }

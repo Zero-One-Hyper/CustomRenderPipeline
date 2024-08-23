@@ -1,6 +1,4 @@
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 
 //使用一个CameraRender类来专门对每个摄像机进行渲染
@@ -49,45 +47,6 @@ public partial class CameraRender
         this._context.DrawRenderers(this._cullingResults, ref drawingSettings, ref filteringSettings);
     }
 
-    /*旧的未使用renderGraphy的绘制Gizmos
-    private partial void DrawGizmosBeforeFX()
-    {
-        if (!Handles.ShouldRenderGizmos() || camera.sceneViewFilterMode == Camera.SceneViewFilterMode.ShowFiltered)
-        {
-            return;
-        }
-
-        if (Handles.ShouldRenderGizmos())
-        {
-            if (useIntermediateBuffer)
-            {
-                Draw(_depthAttachmentID, BuiltinRenderTextureType.CameraTarget, true);
-                ExecuteCommandBuffer();
-            }
-        }
-
-        _context.DrawGizmos(camera, GizmoSubset.PreImageEffects);
-    }
-
-    private partial void DrawGizmosAfterFX()
-    {
-        if (!Handles.ShouldRenderGizmos() || camera.sceneViewFilterMode == Camera.SceneViewFilterMode.ShowFiltered)
-        {
-            return;
-        }
-
-        if (Handles.ShouldRenderGizmos())
-        {
-            if (useIntermediateBuffer)
-            {
-                Draw(_depthAttachmentID, BuiltinRenderTextureType.CameraTarget, true);
-                ExecuteCommandBuffer();
-            }
-        }
-
-        _context.DrawGizmos(camera, GizmoSubset.PostImageEffects);
-    }
-    */
     private partial void PrepareForSceneWindow()
     {
         if (camera.cameraType == CameraType.SceneView)
@@ -99,14 +58,16 @@ public partial class CameraRender
         }
     }
 
+    /*
     private partial void PrepareBuffer()
     {
         Profiler.BeginSample("Editor Only");
         _commandBuffer.name = SampleName = this.camera.name;
         Profiler.EndSample();
     }
+    */
 
-#else
-    private const string SampleName = BUFFER_NAME;
+//#else
+    //private const string SampleName = BUFFER_NAME;
 #endif
 }

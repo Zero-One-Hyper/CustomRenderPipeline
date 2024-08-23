@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using UnityEngine.Experimental.Rendering.RenderGraphModule;
+using UnityEngine.Rendering;
 
 public class UnSupportedShadersPass
 {
 #if UNITY_EDITOR
+    private static ProfilingSampler _unSupportedSampler = new ProfilingSampler("UnSupportedSampler");
     private CameraRender _render;
 
     private void Render(RenderGraphContext context)
@@ -18,7 +20,7 @@ public class UnSupportedShadersPass
     {
 #if UNITY_EDITOR
         using RenderGraphBuilder builder = renderGraph.AddRenderPass(
-            "UnSupported Shaders", out UnSupportedShadersPass unSupportedShadersPass);
+            "UnSupported Shaders", out UnSupportedShadersPass unSupportedShadersPass, _unSupportedSampler);
         unSupportedShadersPass._render = render;
         builder.SetRenderFunc<UnSupportedShadersPass>((pass, context) => pass.Render(context));
 #endif

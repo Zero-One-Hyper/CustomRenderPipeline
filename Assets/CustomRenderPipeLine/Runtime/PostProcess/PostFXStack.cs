@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Experimental.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 
 public partial class PostFXStack
@@ -34,7 +35,15 @@ public partial class PostFXStack
         }
     }
 
-    private const string BufferName = "Post FX";
+    //private const string BufferName = "Post FX";
+
+    /*
+    private CommandBuffer _fXBuffer = new CommandBuffer()
+    {
+        name = BufferName,
+    };
+    */
+    private CommandBuffer _fXBuffer;
 
     private const int MaxBloomPyramidLevels = 16;
 
@@ -93,12 +102,7 @@ public partial class PostFXStack
     private static string _fxaaQualityMediumKeyword = "FXAA_QUALITY_MEDIUM";
     private static string _fxaaAlphaContantsLumaKeyword = "_FXAA_ALPHA_CONTANTS_LUMA_";
 
-    private CommandBuffer _fXBuffer = new CommandBuffer()
-    {
-        name = BufferName,
-    };
-
-    private ScriptableRenderContext _context;
+    //private ScriptableRenderContext _context;
     private Camera _camera;
     private PostFXSettings _postFXSettings;
     private CameraSettings.FinalBlendMode _finalBlendMode;
@@ -114,12 +118,11 @@ public partial class PostFXStack
     private Vector2Int _bufferSize;
     public bool IsActive => _postFXSettings != null;
 
-    public void SetUp(ScriptableRenderContext context, Camera camera, PostFXSettings postFXSettings,
+    public void SetUp(Camera camera, PostFXSettings postFXSettings,
         bool useHDR, bool keepAlpha, int colorLUTResolution, Vector2Int bufferSize,
         CameraSettings.FinalBlendMode finalBlendMode, CameraBufferSettings.BicubicRescalingMode bicubicScaling,
         CameraBufferSettings.FXAA fxaa)
     {
-        this._context = context;
         this._camera = camera;
         this._useHDR = useHDR;
         this._keepAlpha = keepAlpha;
@@ -146,8 +149,9 @@ public partial class PostFXStack
         ApplySceneViewState();
     }
 
-    public void Render(int sourceID)
+    public void Render(RenderGraphContext context, int sourceID)
     {
+        _fXBuffer = context.cmd;
         if (DoBloom(sourceID))
         {
             DoFinal(_bloomResultID);
@@ -158,7 +162,7 @@ public partial class PostFXStack
             DoFinal(sourceID);
         }
 
-        _context.ExecuteCommandBuffer(_fXBuffer);
+        context.renderContext.ExecuteCommandBuffer(_fXBuffer);
         _fXBuffer.Clear();
     }
 

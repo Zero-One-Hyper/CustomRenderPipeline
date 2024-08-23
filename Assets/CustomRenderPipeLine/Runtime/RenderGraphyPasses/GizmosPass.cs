@@ -1,15 +1,12 @@
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.Experimental.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.VirtualTexturing;
 
 public class GizmosPass
 {
 #if UNITY_EDITOR
+    private static ProfilingSampler _gizmosSampler = new ProfilingSampler("GizmosSampler");
     private CameraRender _render;
 
     private void Render(RenderGraphContext context)
@@ -31,7 +28,8 @@ public class GizmosPass
 #if UNITY_EDITOR
         if (Handles.ShouldRenderGizmos())
         {
-            using RenderGraphBuilder builder = renderGraph.AddRenderPass("Gizmos", out GizmosPass gizmosPass);
+            using RenderGraphBuilder builder = renderGraph.AddRenderPass(
+                "Gizmos", out GizmosPass gizmosPass, _gizmosSampler);
             gizmosPass._render = cameraRender;
             builder.SetRenderFunc<GizmosPass>((pass, context) => pass.Render(context));
         }

@@ -1,14 +1,16 @@
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 
 public class Lighting
 {
-    private const string BufferName = "Lighting";
+    //private const string BufferName = "Lighting";
     private const int MaxDirectionLightCount = 4;
     private const int MaxOtherLightCount = 64;
 
-    private CommandBuffer _lightBuffer = new CommandBuffer() { name = BufferName, };
+    //private CommandBuffer _lightBuffer = new CommandBuffer() { name = BufferName, };
+    private CommandBuffer _lightBuffer;
 
     private static int _directionLightCountID = UnityEngine.Shader.PropertyToID("_DirectionLightCount");
     private static int _directionLightColorsID = UnityEngine.Shader.PropertyToID("_DirectionLightColors");
@@ -43,17 +45,18 @@ public class Lighting
 
     private Shadows _shadows = new Shadows();
 
-    public void SetUp(ScriptableRenderContext context, CullingResults cullingResults,
+    public void SetUp(RenderGraphContext context, CullingResults cullingResults,
         ShadowSettings shadowSettings, bool useLightsPerObject, int renderingLayerMask)
     {
+        _lightBuffer = context.cmd;
         this._cullingResults = cullingResults;
-        _lightBuffer.BeginSample(BufferName);
+        //_lightBuffer.BeginSample(BufferName);
         _shadows.SetUp(context, cullingResults, shadowSettings);
         //在cull时unity也会计算那些光源会影响相机可视空间
         SetUpLights(useLightsPerObject, renderingLayerMask);
         _shadows.Render();
-        _lightBuffer.EndSample(BufferName);
-        context.ExecuteCommandBuffer(_lightBuffer);
+        //_lightBuffer.EndSample(BufferName);
+        context.renderContext.ExecuteCommandBuffer(_lightBuffer);
         _lightBuffer.Clear();
     }
 

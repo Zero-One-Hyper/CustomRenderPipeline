@@ -1,11 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.Experimental.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 
 public class LightingPass
 {
+    private static ProfilingSampler _lightingSampler = new ProfilingSampler("LightingSampler");
     private Lighting _lighting;
 
     private CullingResults _cullingResults;
@@ -18,7 +16,7 @@ public class LightingPass
 
     private void Render(RenderGraphContext context)
     {
-        _lighting.SetUp(context.renderContext, _cullingResults, _shadowSettings,
+        _lighting.SetUp(context, _cullingResults, _shadowSettings,
             _useLightsPerObjet, _renderingLayerMask);
     }
 
@@ -27,7 +25,7 @@ public class LightingPass
         bool useLightsPerObjects, int renderingLayerMask)
     {
         using RenderGraphBuilder builder = renderGraph.AddRenderPass(
-            "Lighting Setup", out LightingPass lightingPass);
+            "Lighting Setup", out LightingPass lightingPass, _lightingSampler);
         lightingPass._lighting = lighting;
         lightingPass._cullingResults = cullingResults;
         lightingPass._shadowSettings = shadowSettings;
