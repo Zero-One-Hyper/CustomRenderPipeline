@@ -79,7 +79,7 @@ public partial class CameraRender
     private Vector2Int _bufferSize;
 
     public void Render(RenderGraph renderGraph, ScriptableRenderContext context, Camera camera,
-        bool useDynamicBaching, bool useGPUInstancing, bool useLightPerObject,
+        bool useDynamicBatching, bool useGPUInstancing, bool useLightPerObject,
         CameraBufferSettings cameraBufferSettings, ShadowSettings shadowSettings, PostFXSettings postFXSettings,
         int colorLUTResolution)
     {
@@ -139,27 +139,17 @@ public partial class CameraRender
 
         _commandBuffer.BeginSample(SampleName);
 
-        _commandBuffer.SetGlobalVector(_bufferSizeID, new Vector4(
-            1f / _bufferSize.x, 1f / _bufferSize.y,
-            _bufferSize.x, _bufferSize.y));
-
         ExecuteCommandBuffer();
-        _lighting.SetUp(this._context, _cullingResults, shadowSettings,
-            useLightPerObject, cameraSettings.maskLights ? cameraSettings.renderingLayerMask : -1);
-        //
+        //设置FX堆栈及验证FXAA
         cameraBufferSettings.fxaa.enable &= cameraSettings.allowFXAA;
         _postFXStack.SetUp(this._context, this.camera, postFXSettings, this._useHDR, cameraSettings.keepAlpha,
             colorLUTResolution, _bufferSize,
             cameraSettings.finalBlendMode, cameraBufferSettings.bicubicRescaling,
             cameraBufferSettings.fxaa);
         _commandBuffer.EndSample(SampleName);
-
-        //应在渲染常规几何体之前渲染阴影
-        //设置摄像机参数
-        SetUp();
-        //将绘制命令存入命令缓存区中
-        DrawVisibleGeometry(useDynamicBaching, useGPUInstancing, useLightPerObject,
-            cameraSettings.renderingLayerMask);
+        //将是否使用中间纹理挪到setup外面来
+        useIntermediateBuffer = _useRenderScaledRendering || useColorTexture ||
+                                useDepthTexture || _postFXStack.IsActive;
 
         var renderGraphParameters = new RenderGraphParameters()
         {
@@ -169,10 +159,20 @@ public partial class CameraRender
             scriptableRenderContext = this._context,
         };
 
+        //使用RenderGraph使所有命令缓冲的执行和渲染都在其中进行
         //放在using中可以简单的不使用.Dispose() 相当于一个try块，finally中会调用dispose
         using (renderGraph.RecordAndExecute(renderGraphParameters))
         {
             //rendergraph的过程
+            //光照设置
+            LightingPass.Recode(renderGraph, _lighting, _cullingResults, shadowSettings,
+                useLightPerObject, cameraSettings.renderingLayerMask);
+            //应在渲染常规几何体之前渲染阴影
+            //设置摄像机参数
+            SetUpPass.Recode(renderGraph, this);
+            //将绘制命令存入命令缓存区中 绘制可见物体
+            VisibleGeometryPass.Recode(renderGraph, this, useDynamicBatching, useGPUInstancing,
+                useLightPerObject, cameraSettings.maskLights ? cameraSettings.renderingLayerMask : -1);
             //绘制不受支持的Shader 
             UnSupportedShadersPass.Recode(renderGraph, this);
             //后处理
@@ -198,15 +198,14 @@ public partial class CameraRender
         CommandBufferPool.Release(renderGraphParameters.commandBuffer);
     }
 
-    private void SetUp()
+    public void SetUp()
     {
         //这一步用来将摄像机的属性应用到context上，渲染天空盒的时候主要是设置VP矩阵（unity_MatrixVP）
         _context.SetupCameraProperties(this.camera); //有了这个指令在scene中选中摄像机时才不会黑屏
         //清除标志位 写了这个在FrameDebug中才会显示 Clear(Color + z + stencil)
         CameraClearFlags flags = camera.clearFlags;
 
-        useIntermediateBuffer = _useRenderScaledRendering || useColorTexture ||
-                                useDepthTexture || _postFXStack.IsActive;
+
         if (useIntermediateBuffer)
         {
             if (flags > CameraClearFlags.Color)
@@ -238,6 +237,11 @@ public partial class CameraRender
         _commandBuffer.BeginSample(SampleName);
         _commandBuffer.SetGlobalTexture(_colorTextureID, _missingTexture);
         _commandBuffer.SetGlobalTexture(_depthTextureID, _missingTexture);
+
+        //延迟设置Camera缓冲区大小到setup结束
+        _commandBuffer.SetGlobalVector(_bufferSizeID, new Vector4(
+            1f / _bufferSize.x, 1f / _bufferSize.y,
+            _bufferSize.x, _bufferSize.y));
 
         ExecuteCommandBuffer();
     }
@@ -271,7 +275,7 @@ public partial class CameraRender
     }
 
     //顾名思义使用这个方法实现绘制摄像机看到的东西
-    private void DrawVisibleGeometry(bool useDynamicBaching, bool useGPUInstancing, bool useLightsPerObject,
+    public void DrawVisibleGeometry(bool useDynamicBaching, bool useGPUInstancing, bool useLightsPerObject,
         int renderingLayerMask)
     {
         PerObjectData lightsPerObjectFlag =
@@ -418,14 +422,6 @@ public partial class CameraRender
         CoreUtils.Destroy(_missingTexture);
     }
 
-    /*不再需要partial
-    //使用partial只声明方法
-    public partial void DrawUnsupportedShaders();
-    */
-    /*旧的未使用renderGraphy的绘制Gizmos
-    private partial void DrawGizmosBeforeFX();
-    private partial void DrawGizmosAfterFX();
-    */
     //UI会被单独渲染，而不是通过我们的renderPipeline
     //但是在Scene窗口中需要我们明确地将ui添加到世界几何体中去
     private partial void PrepareForSceneWindow();
