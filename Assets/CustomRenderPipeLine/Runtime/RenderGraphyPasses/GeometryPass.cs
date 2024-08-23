@@ -28,10 +28,6 @@ public class GeometryPass
 
     private void Render(RenderGraphContext context)
     {
-        /*
-        _render.DrawVisibleGeometry(_useDynamicBatching, _useGPUInstancing, _useLightsPerObject,
-            _renderingLayerMask);
-        */
         context.cmd.DrawRendererList(_geometryListHandle);
         context.renderContext.ExecuteCommandBuffer(context.cmd);
         context.cmd.Clear();
@@ -40,6 +36,7 @@ public class GeometryPass
     //这里弃用了useDynamicBatching 和 useGPUInstancing
     //使用RenderGraph时动态批处理会被始终禁用 GPU实例化会始终开启
     public static void Recode(RenderGraph renderGraph, Camera renderCamera, CullingResults cullingResults,
+        in CameraRendererTextures rendererTextures,
         bool useLightsPerObject, int renderingLayerMask, bool isOpaque)
     {
         ProfilingSampler sampler = isOpaque ? _geometryOpaqueSampler : _geometryTransparentSampler;
@@ -67,21 +64,24 @@ public class GeometryPass
         //注册渲染列表Handle
         geometryPass._geometryListHandle = builder.UseRendererList(handle);
 
+        //几何过程有可能使用复制纹理 所以始终读入写入纹理
+        builder.ReadWriteTexture(rendererTextures.colorAttachment);
+        builder.ReadWriteTexture(rendererTextures.depthAttachment);
+        if (!isOpaque)
+        {
+            //如果副本存在，透明通道会从副本中读取。我们可以通过调用IsValid纹理句柄来检查这一点。
+            //我们也不需要跟踪这些句柄，因为纹理已经全局设置了。
+            if (rendererTextures.colorCopy.IsValid())
+            {
+                builder.ReadTexture(rendererTextures.colorCopy);
+            }
+
+            if (rendererTextures.depthCopy.IsValid())
+            {
+                builder.ReadTexture(rendererTextures.depthCopy);
+            }
+        }
+
         builder.SetRenderFunc<GeometryPass>((pass, context) => pass.Render(context));
     }
-    /*
-    public static void Recode(RenderGraph renderGraph, CameraRender render,
-        bool useDynamicBatching, bool useGPUInstancing, bool useLightsPerObject,
-        int renderingLayerMask)
-    {
-        using RenderGraphBuilder builder = renderGraph.AddRenderPass(
-            "Draw Visible Geometry", out GeometryPass visibleGeometryPass, _geometrySampler);
-        visibleGeometryPass._render = render;
-        visibleGeometryPass._useDynamicBatching = useDynamicBatching;
-        visibleGeometryPass._useGPUInstancing = useGPUInstancing;
-        visibleGeometryPass._useLightsPerObject = useLightsPerObject;
-        visibleGeometryPass._renderingLayerMask = renderingLayerMask;
-        builder.SetRenderFunc<GeometryPass>((pass, context) => pass.Render(context));
-    }
-    */
 }

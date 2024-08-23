@@ -149,7 +149,7 @@ public partial class PostFXStack
         ApplySceneViewState();
     }
 
-    public void Render(RenderGraphContext context, int sourceID)
+    public void Render(RenderGraphContext context, RenderTargetIdentifier sourceID)
     {
         _fXBuffer = context.cmd;
         if (DoBloom(sourceID))
@@ -197,7 +197,7 @@ public partial class PostFXStack
             (int)pass, MeshTopology.Triangles, 3);
     }
 
-    private bool DoBloom(int sourceID)
+    private bool DoBloom(RenderTargetIdentifier sourceID)
     {
         PostFXSettings.BloomSettings bloomSettings = _postFXSettings.BloomSetting;
         int width;
@@ -391,7 +391,7 @@ public partial class PostFXStack
             _fxaa.fixedThreshold, _fxaa.relativeThreshold, _fxaa.subpixelBlending, 0));
     }
 
-    private void DoFinal(int sourceID)
+    private void DoFinal(RenderTargetIdentifier sourceID)
     {
     #region ColorGrading
 

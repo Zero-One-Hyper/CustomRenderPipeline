@@ -12,9 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 938df166229202249b6db83339818982, type: 3}
   m_Name: Custom Render Pipe Line Asset
   m_EditorClassIdentifier: 
-  useSRPBacher: 1
-  useGPUInstancing: 1
-  useDynamicBaching: 0
+  _useSRPBacher: 1
   useLightsPerObject: 1
   cameraBufferSettings:
     allowHDR: 1

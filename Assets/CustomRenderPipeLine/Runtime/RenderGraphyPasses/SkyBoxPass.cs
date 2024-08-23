@@ -17,13 +17,17 @@ public class SkyBoxPass
         context.renderContext.DrawSkybox(_camera);
     }
 
-    public static void Recode(RenderGraph renderGraph, Camera renderCamera)
+    public static void Recode(RenderGraph renderGraph, Camera renderCamera,
+        in CameraRendererTextures rendererTextures)
     {
         if (renderCamera.clearFlags == CameraClearFlags.Skybox)
         {
             using RenderGraphBuilder builder = renderGraph.AddRenderPass(
                 "Draw SkyBox", out SkyBoxPass skyBoxPass, _skyBoxSampler);
             skyBoxPass._camera = renderCamera;
+            //天空盒需要读写颜色，读深度 不需要写深度
+            builder.ReadWriteTexture(rendererTextures.colorAttachment);
+            builder.ReadTexture(rendererTextures.depthAttachment);
             builder.SetRenderFunc<SkyBoxPass>((pass, context) => pass.Render(context));
         }
     }

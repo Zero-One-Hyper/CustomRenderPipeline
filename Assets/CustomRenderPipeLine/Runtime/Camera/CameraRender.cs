@@ -9,47 +9,38 @@ public partial class CameraRender
     public CameraRender(UnityEngine.Shader shader)
     {
         _cameraRendererMaterial = CoreUtils.CreateEngineMaterial(shader);
-        _missingTexture = new Texture2D(1, 1)
-        {
-            hideFlags = HideFlags.HideAndDontSave,
-            name = "Missing",
-        };
-        _missingTexture.SetPixel(0, 0, Color.white * 0.5f);
-        _missingTexture.Apply(true, true);
+        //_missingTexture = new Texture2D(1, 1)
+        //{
+        //    hideFlags = HideFlags.HideAndDontSave,
+        //    name = "Missing",
+        //};
+        //_missingTexture.SetPixel(0, 0, Color.white * 0.5f);
+        //_missingTexture.Apply(true, true);
     }
-    /* 使用渲染列表替代
-    //LightMode可以随便自己定一个
-    private static ShaderTagId[] _shaderTagId =
-    {
-        new ShaderTagId("CustomRenderPipelineLightMode"),
-        new ShaderTagId("UniversalForward"),
-        new ShaderTagId("SRPDefaultUnlit")
-    };
-    */
 
     public const float RenderScaleMin = 0.01f;
     public const float RenderScaleMax = 2.0f;
 
     //unity的_ScreenParams中的值与Camera的width和height绑定，若要使用RenderScale需要调整
-    private static int _bufferSizeID = UnityEngine.Shader.PropertyToID("_CameraBufferSize");
+    //private static int _bufferSizeID = UnityEngine.Shader.PropertyToID("_CameraBufferSize");
 
     //分别定义颜色缓冲和深度缓冲 分开二者
-    public static int _colorAttachmentID = UnityEngine.Shader.PropertyToID("_CameraColorAttachment");
-    public static int _depthAttachmentID = UnityEngine.Shader.PropertyToID("_CameraDepthAttachment");
+    //public static int _colorAttachmentID = UnityEngine.Shader.PropertyToID("_CameraColorAttachment");
+    //public static int _depthAttachmentID = UnityEngine.Shader.PropertyToID("_CameraDepthAttachment");
 
-    private static int _colorTextureID = UnityEngine.Shader.PropertyToID("_CameraColorTexture");
-    private static int _depthTextureID = UnityEngine.Shader.PropertyToID("_CameraDepthTexture");
+    //private static int _colorTextureID = UnityEngine.Shader.PropertyToID("_CameraColorTexture");
+    //private static int _depthTextureID = UnityEngine.Shader.PropertyToID("_CameraDepthTexture");
 
     private static int _sourceTextureID = UnityEngine.Shader.PropertyToID("_SourceTexture");
 
     //最终混合模式
-    private int _finalSrcBlendID = UnityEngine.Shader.PropertyToID("_FinalSrcBlend");
-    private int _finalDstBlendID = UnityEngine.Shader.PropertyToID("_FinalDstBlend");
+    //private int _finalSrcBlendID = UnityEngine.Shader.PropertyToID("_FinalSrcBlend");
+    //private int _finalDstBlendID = UnityEngine.Shader.PropertyToID("_FinalDstBlend");
 
     private CommandBuffer _commandBuffer;
 
     private static CameraSettings _defaultCameraSettings = new CameraSettings();
-    private static Rect _fullViewRect = new Rect(0f, 0f, 1f, 1f);
+    //private static Rect _fullViewRect = new Rect(0f, 0f, 1f, 1f);
 
     private CullingResults _cullingResults;
     private ScriptableRenderContext _context;
@@ -57,18 +48,18 @@ public partial class CameraRender
     private Lighting _lighting = new Lighting();
     private PostFXStack _postFXStack = new PostFXStack();
     private Material _cameraRendererMaterial;
-    private Texture2D _missingTexture; //确保采样深度纹理时至少有正确的纹理存在
+    //private Texture2D _missingTexture; //确保采样深度纹理时至少有正确的纹理存在
 
-    private bool _useHDR;
-    public bool useColorTexture;
-    public bool useDepthTexture;
-    public bool useIntermediateBuffer; //在不使用postFX时依旧可以使用深度纹理
-    private bool _useRenderScaledRendering;
+    //private bool _useHDR;
+    //public bool useColorTexture;
+    //public bool useDepthTexture;
+    //public bool useIntermediateBuffer; //在不使用postFX时依旧可以使用深度纹理
+    //private bool _useRenderScaledRendering;
 
     //诸如WebGL上不能使用CopyTexture的平台使用着色器复制
-    private bool _copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
+    //private bool _copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
 
-    private Vector2Int _bufferSize;
+    //private Vector2Int _bufferSize;
 
     public void Render(RenderGraph renderGraph, ScriptableRenderContext context, Camera renderCamera,
         bool useLightPerObject, CameraBufferSettings cameraBufferSettings, ShadowSettings shadowSettings,
@@ -90,7 +81,8 @@ public partial class CameraRender
             cameraSettings = _defaultCameraSettings;
         }
 
-
+        bool useColorTexture;
+        bool useDepthTexture;
         if (this.camera.cameraType == CameraType.Reflection)
         {
             //用于渲染反射探针的摄像机
@@ -110,40 +102,58 @@ public partial class CameraRender
 
         //拿到实际的渲染缩放
         float renderScale = cameraSettings.GetRenderScale(cameraBufferSettings.renderScale);
-        _useRenderScaledRendering = renderScale <= 0.99f || renderScale >= 1.01f;
+        bool useRenderScaledRendering = renderScale <= 0.99f || renderScale >= 1.01f;
 
         //将 UI 几何体发出到 Scene 视图中进行渲染。
         //有可能给场景添加几何体 所以必须在cull之前绘制
-        PrepareForSceneWindow();
+        //PrepareForSceneWindow();
+#if UNITY_EDITOR
+        if (camera.cameraType == CameraType.SceneView)
+        {
+            ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
+            useRenderScaledRendering = false;
+        }
+#endif
         //剔除不在相机中的物体
-        if (!Cull(shadowSettings.maxDistance))
+        //if (!Cull(shadowSettings.maxDistance))
+        //{
+        //    return;
+        //}
+        ScriptableCullingParameters parameters;
+        if (!this.camera.TryGetCullingParameters(false, out parameters))
         {
             return;
         }
 
-        this._useHDR = cameraBufferSettings.allowHDR && renderCamera.allowHDR;
-        if (_useRenderScaledRendering)
+        parameters.shadowDistance = Mathf.Min(shadowSettings.maxDistance, camera.farClipPlane);
+        //使用context的Cull方法来进行剔除 (这里使用ref来避免对parmeters的拷贝，因为parameters可能很大）
+        _cullingResults = _context.Cull(ref parameters);
+
+        //this._useHDR = cameraBufferSettings.allowHDR && renderCamera.allowHDR;
+        bool useHDR = cameraBufferSettings.allowHDR && renderCamera.allowHDR;
+        Vector2Int bufferSize = default;
+        if (useRenderScaledRendering)
         {
             renderScale = Mathf.Clamp(renderScale, RenderScaleMin, RenderScaleMax);
-            _bufferSize.x = (int)(this.camera.pixelWidth * renderScale);
-            _bufferSize.y = (int)(this.camera.pixelHeight * renderScale);
+            bufferSize.x = (int)(this.camera.pixelWidth * renderScale);
+            bufferSize.y = (int)(this.camera.pixelHeight * renderScale);
         }
         else
         {
-            _bufferSize.x = this.camera.pixelWidth;
-            _bufferSize.y = this.camera.pixelHeight;
+            bufferSize.x = this.camera.pixelWidth;
+            bufferSize.y = this.camera.pixelHeight;
         }
 
         //设置FX堆栈及验证FXAA
         cameraBufferSettings.fxaa.enable &= cameraSettings.allowFXAA;
-        _postFXStack.SetUp(this.camera, postFXSettings, this._useHDR, cameraSettings.keepAlpha,
-            colorLUTResolution, _bufferSize,
+        _postFXStack.SetUp(this.camera, postFXSettings, useHDR, cameraSettings.keepAlpha,
+            colorLUTResolution, bufferSize,
             cameraSettings.finalBlendMode, cameraBufferSettings.bicubicRescaling,
             cameraBufferSettings.fxaa);
         //_commandBuffer.EndSample(SampleName);
         //将是否使用中间纹理挪到setup外面来
-        useIntermediateBuffer = _useRenderScaledRendering || useColorTexture ||
-                                useDepthTexture || _postFXStack.IsActive;
+        bool useIntermediateBuffer = useRenderScaledRendering || useColorTexture ||
+                                     useDepthTexture || _postFXStack.IsActive;
 
 
         var renderGraphParameters = new RenderGraphParameters()
@@ -168,51 +178,57 @@ public partial class CameraRender
                 useLightPerObject, cameraSettings.renderingLayerMask);
             //应在渲染常规几何体之前渲染阴影
             //设置摄像机参数
-            SetUpPass.Recode(renderGraph, this);
+            CameraRendererTextures cameraRendererTextures =
+                SetUpPass.Recode(renderGraph, renderCamera, bufferSize, useIntermediateBuffer, useHDR,
+                    useColorTexture, useDepthTexture);
 
             //将绘制命令存入命令缓存区中 绘制可见物体
-            /*
-            GeometryPass.Recode(renderGraph, renderCamera, _cullingResults, useDynamicBatching, useGPUInstancing,
-                useLightPerObject, cameraSettings.maskLights ? cameraSettings.renderingLayerMask : -1, true);
-            */
             //绘制不透明物体
-            GeometryPass.Recode(renderGraph, renderCamera, _cullingResults,
+            GeometryPass.Recode(renderGraph, renderCamera, _cullingResults, cameraRendererTextures,
                 useLightPerObject, cameraSettings.renderingLayerMask, true);
             //绘制天空盒
-            SkyBoxPass.Recode(renderGraph, renderCamera);
+            SkyBoxPass.Recode(renderGraph, renderCamera, cameraRendererTextures);
             //若使用中间纹理 则拷贝
-            if (useColorTexture || useDepthTexture)
-            {
-                CopyAttachmentsPass.Recode(renderGraph, this);
-            }
+            //if (useColorTexture || useDepthTexture)
+            //{
+            CameraRendererCopier copier = new CameraRendererCopier(_cameraRendererMaterial, renderCamera,
+                cameraSettings.finalBlendMode);
+            CopyAttachmentsPass.Recode(renderGraph,
+                copier, cameraRendererTextures,
+                useColorTexture, useDepthTexture);
+            //}
 
             //绘制透明物体
-            GeometryPass.Recode(renderGraph, renderCamera, _cullingResults,
+            GeometryPass.Recode(renderGraph, renderCamera, _cullingResults, cameraRendererTextures,
                 useLightPerObject, cameraSettings.renderingLayerMask, false);
             //绘制不受支持的Shader 
             UnSupportedShadersPass.Recode(renderGraph, renderCamera, _cullingResults);
             //后处理
             if (_postFXStack.IsActive)
             {
-                PostFXPass.Record(renderGraph, this._postFXStack);
+                PostFXPass.Record(renderGraph, _postFXStack, cameraRendererTextures);
             }
             else if (useIntermediateBuffer)
             {
-                FinalPass.Record(renderGraph, this, cameraSettings.finalBlendMode);
+                FinalPass.Record(renderGraph, copier, cameraRendererTextures);
             }
 
             //绘制gizmos后绘制后处理
             //后处理后绘制Gizmos(绘制gizmos的地方换到了RenderGraphy)
-            GizmosPass.Record(renderGraph, this);
+            GizmosPass.Record(renderGraph, copier, cameraRendererTextures, useIntermediateBuffer);
         }
 
         //在命令提交之前请求清理
-        this.CleanUp();
+        //this.CleanUp();
+        _lighting.CleanUp();
         //提交context(只有我们提交context，才会真正开始渲染)
-        Submit();
+        //Submit();
+        context.ExecuteCommandBuffer(renderGraphParameters.commandBuffer);
+        context.Submit();
         CommandBufferPool.Release(renderGraphParameters.commandBuffer);
     }
 
+    /*旧的SetUp
     public void SetUp()
     {
         //这一步用来将摄像机的属性应用到context上，渲染天空盒的时候主要是设置VP矩阵（unity_MatrixVP）
@@ -259,6 +275,7 @@ public partial class CameraRender
 
         ExecuteCommandBuffer();
     }
+    */
 
     public void Draw(RenderTargetIdentifier from, RenderTargetIdentifier to, bool isDepth = false)
     {
@@ -268,6 +285,7 @@ public partial class CameraRender
             isDepth ? 1 : 0, MeshTopology.Triangles, 3);
     }
 
+    /*转移至FinalPass
     public void DrawFinal(CameraSettings.FinalBlendMode finalBlendMode)
     {
         _commandBuffer.SetGlobalFloat(_finalSrcBlendID, (float)finalBlendMode.source);
@@ -286,61 +304,6 @@ public partial class CameraRender
         );
         _commandBuffer.SetGlobalFloat(_finalSrcBlendID, 1f);
         _commandBuffer.SetGlobalFloat(_finalDstBlendID, 0f);
-    }
-
-    /*
-    //顾名思义使用这个方法实现绘制摄像机看到的东西
-    public void DrawVisibleGeometry(bool useDynamicBatching, bool useGPUInstancing, bool useLightsPerObject,
-        int renderingLayerMask)
-    {
-        //RenderGraph只在buffer上调用beginSample和endSample，但是不执行
-        //所以执行buffer并清空
-        ExecuteCommandBuffer();
-        PerObjectData lightsPerObjectFlag =
-            useLightsPerObject ? PerObjectData.LightData | PerObjectData.LightIndices : PerObjectData.None;
-        //知道什么东西会被剔除后，就可以继续渲染了
-        var sortingSettings = new SortingSettings(this.camera) //排序设置
-        {
-            //设置排序条件
-            criteria = SortingCriteria.CommonOpaque,
-        };
-
-        var drawingSettings = new DrawingSettings(_shaderTagId[0], sortingSettings)
-        {
-            //若要使用动态合批，需要关闭gpuInstancing，并关闭SRP合批（因为他会优先生效）
-            enableDynamicBatching = useDynamicBatching,
-            enableInstancing = useGPUInstancing,
-            //告诉管线将光照贴图的UV发送到着色器
-            perObjectData = PerObjectData.ReflectionProbes |
-                            PerObjectData.Lightmaps |
-                            PerObjectData.LightProbe | PerObjectData.LightProbeProxyVolume |
-                            PerObjectData.OcclusionProbe | PerObjectData.OcclusionProbeProxyVolume | //光照探针的阴影遮罩数据
-                            PerObjectData.ShadowMask |
-                            lightsPerObjectFlag,
-        }; //绘制设置
-        //调用SetShaderPassName来绘制多个通道
-        for (int i = 1; i < _shaderTagId.Length; i++)
-        {
-            drawingSettings.SetShaderPassName(i, _shaderTagId[i]);
-        }
-
-        var filteringSettings = new FilteringSettings(RenderQueueRange.opaque,
-            renderingLayerMask: (uint)renderingLayerMask); //过滤设置
-        this._context.DrawRenderers(this._cullingResults, ref drawingSettings, ref filteringSettings);
-
-        //这个方法只会将绘制命令缓存到命令队列中，需要使用Submint方法提交工作队列来执行
-        //像绘制天空盒这样的命令可以通过特殊的方法来添加到命令队列中，但是其他的特殊命令不一定有对应的方法
-        this._context.DrawSkybox(this.camera);
-        if (useColorTexture || useDepthTexture)
-        {
-            CopyAttachments(); //绘制完天空盒后复制深度贴图
-        }
-
-        //在天空盒渲染后再渲染透明物体
-        sortingSettings.criteria = SortingCriteria.CommonTransparent;
-        drawingSettings.sortingSettings = sortingSettings;
-        filteringSettings.renderQueueRange = RenderQueueRange.transparent;
-        this._context.DrawRenderers(this._cullingResults, ref drawingSettings, ref filteringSettings);
     }
     */
 
@@ -372,6 +335,7 @@ public partial class CameraRender
         return false;
     }
 
+    /*旧的复制
     public void CopyAttachments()
     {
         //同理 先刷新缓冲区
@@ -415,33 +379,33 @@ public partial class CameraRender
 
         ExecuteCommandBuffer();
     }
-
+    */
     private void CleanUp()
     {
         _lighting.CleanUp();
-        if (useIntermediateBuffer)
-        {
-            _commandBuffer.ReleaseTemporaryRT(_colorAttachmentID);
-            _commandBuffer.ReleaseTemporaryRT(_depthAttachmentID);
-            if (useColorTexture)
-            {
-                _commandBuffer.ReleaseTemporaryRT(_colorTextureID);
-            }
+        //f (useIntermediateBuffer)
+        //
+        //   //_commandBuffer.ReleaseTemporaryRT(_colorAttachmentID);
+        //   //_commandBuffer.ReleaseTemporaryRT(_depthAttachmentID);
+        //   if (useColorTexture)
+        //   {
+        //       _commandBuffer.ReleaseTemporaryRT(_colorTextureID);
+        //   }
 
-            if (useDepthTexture)
-            {
-                _commandBuffer.ReleaseTemporaryRT(_depthTextureID);
-            }
-        }
+        //   if (useDepthTexture)
+        //   {
+        //       _commandBuffer.ReleaseTemporaryRT(_depthTextureID);
+        //   }
+        //
     }
 
     public void Dispose()
     {
         CoreUtils.Destroy(_cameraRendererMaterial);
-        CoreUtils.Destroy(_missingTexture);
+        //sCoreUtils.Destroy(_missingTexture);
     }
 
     //UI会被单独渲染，而不是通过我们的renderPipeline
     //但是在Scene窗口中需要我们明确地将ui添加到世界几何体中去
-    private partial void PrepareForSceneWindow();
+    //private partial void PrepareForSceneWindow();
 }

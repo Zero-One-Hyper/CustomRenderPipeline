@@ -6,40 +6,16 @@ using UnityEngine.Rendering;
 public partial class CameraRender
 {
 #if UNITY_EDITOR
-
-
-    //用于在Editor下存储Camera名为样本名，就不需要多分配内存了
-    private string SampleName { get; set; }
-
-    /*
-    //使用RenderGraph后完全由editor控制 便不再需要partical
-    public void DrawUnsupportedShaders()
-    {
-        var sortingSettings = new SortingSettings(this.camera);
-        var filteringSettings = FilteringSettings.defaultValue;
-        var drawingSettings = new DrawingSettings(legacyShaderTagIds[0], sortingSettings)
-        {
-            overrideMaterial = _errorMaterial,
-        };
-        //调用SetShaderPassName来绘制多个通道
-        for (int i = 1; i < legacyShaderTagIds.Length; i++)
-        {
-            drawingSettings.SetShaderPassName(i, legacyShaderTagIds[i]);
-        }
-
-        this._context.DrawRenderers(this._cullingResults, ref drawingSettings, ref filteringSettings);
-    }
-    */
-    private partial void PrepareForSceneWindow()
-    {
-        if (camera.cameraType == CameraType.SceneView)
-        {
-            //当摄像机类型为场景相机时，使用这个场景相机渲染
-            //将 UI 几何体发出到 Scene 视图中进行渲染。
-            ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
-            _useRenderScaledRendering = false; //不希望渲染缩放影响scene相机
-        }
-    }
+    //private partial void PrepareForSceneWindow()
+    //{
+    //    if (camera.cameraType == CameraType.SceneView)
+    //    {
+    //        //当摄像机类型为场景相机时，使用这个场景相机渲染
+    //        //将 UI 几何体发出到 Scene 视图中进行渲染。
+    //        ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
+    //        _useRenderScaledRendering = false; //不希望渲染缩放影响scene相机
+    //    }
+    //}
 
 #endif
 }
