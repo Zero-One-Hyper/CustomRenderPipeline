@@ -13,7 +13,7 @@ public class UnSupportedShadersPass
     {
         new ShaderTagId("Always"),
         new ShaderTagId("ForwardBase"),
-        new ShaderTagId("PrepassBase"),
+        new ShaderTagId("PrePassBase"),
         new ShaderTagId("Vertex"),
         new ShaderTagId("VertexLMRGBM"),
         new ShaderTagId("VertexLM")
@@ -27,8 +27,6 @@ public class UnSupportedShadersPass
 
     private void Render(RenderGraphContext context)
     {
-        //针对不受支持的Shader的渲染代码放入了CamraRender.Edior中定义
-        //_render.DrawUnsupportedShaders();
         //转为使用RenderList绘制几何图形
         context.cmd.DrawRendererList(_unSupprotedRenderListHandle);
         context.renderContext.ExecuteCommandBuffer(context.cmd);

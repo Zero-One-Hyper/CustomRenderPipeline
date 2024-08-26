@@ -35,14 +35,6 @@ public partial class PostFXStack
         }
     }
 
-    //private const string BufferName = "Post FX";
-
-    /*
-    private CommandBuffer _fXBuffer = new CommandBuffer()
-    {
-        name = BufferName,
-    };
-    */
     private CommandBuffer _fXBuffer;
 
     private const int MaxBloomPyramidLevels = 16;

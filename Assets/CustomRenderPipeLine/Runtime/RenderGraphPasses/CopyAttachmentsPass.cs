@@ -20,7 +20,6 @@ public class CopyAttachmentsPass
 
     private void Render(RenderGraphContext context)
     {
-        //_cameraRender.CopyAttachments();
         CommandBuffer cmd = context.cmd;
         if (_copyColor)
         {

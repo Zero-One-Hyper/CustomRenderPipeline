@@ -19,7 +19,6 @@ public class Shadows
         public bool isPoint;
     }
 
-    //private const string BufferName = "Shadows";
 
     private const int MaxShadowsDirectionLightCount = 4;
     private const int MaxShadowsOtherLightCount = 16;
@@ -27,7 +26,6 @@ public class Shadows
     //最大级联阴影数
     private const int MaxCascades = 4;
 
-    //private CommandBuffer _shadowBuffer = new CommandBuffer() { name = BufferName, };
     private CommandBuffer _shadowBuffer;
 
     private ScriptableRenderContext _context;
@@ -60,7 +58,6 @@ public class Shadows
     //用于消除不正确的条纹状阴影暗斑
     private static int _cascadeDataID = UnityEngine.Shader.PropertyToID("_CascadeData");
 
-    //private static int _maxShadowDistanceID = UnityEngine.Shader.PropertyToID("_MaxShadowDistance");
     //使用计算好的淡化距离替换最大距离
     private static int _shadowDistanceFadeID = UnityEngine.Shader.PropertyToID("_ShadowDistanceFade");
 

@@ -8,21 +8,12 @@ public class GizmosPass
 #if UNITY_EDITOR
     private static ProfilingSampler _gizmosSampler = new ProfilingSampler("GizmosSampler");
 
-    //private CameraRender _render;
     private bool _requiresDepthCopy;
     private CameraRendererCopier _copier;
     private TextureHandle _depthTextureHandle;
 
     private void Render(RenderGraphContext context)
     {
-        //if (_render.useIntermediateBuffer)
-        //{
-        //    _render.Draw(CameraRender._depthAttachmentID, BuiltinRenderTextureType.CameraTarget, true);
-        //    _render.ExecuteCommandBuffer();
-        //}
-        //context.renderContext.DrawGizmos(_render.camera, GizmoSubset.PreImageEffects);
-        //context.renderContext.DrawGizmos(_render.camera, GizmoSubset.PostImageEffects);
-
         CommandBuffer buffer = context.cmd;
         ScriptableRenderContext renderContext = context.renderContext;
         if (_requiresDepthCopy)

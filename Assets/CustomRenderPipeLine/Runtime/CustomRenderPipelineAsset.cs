@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Serialization;
 
 //https://zhuanlan.zhihu.com/p/693885113
 //https://catlikecoding.com/unity/tutorials/custom-srp/custom-render-pipeline/

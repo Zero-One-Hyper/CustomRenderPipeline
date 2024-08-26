@@ -5,11 +5,9 @@ using UnityEngine.Rendering;
 
 public class Lighting
 {
-    //private const string BufferName = "Lighting";
     private const int MaxDirectionLightCount = 4;
     private const int MaxOtherLightCount = 64;
 
-    //private CommandBuffer _lightBuffer = new CommandBuffer() { name = BufferName, };
     private CommandBuffer _lightBuffer;
 
     private static int _directionLightCountID = UnityEngine.Shader.PropertyToID("_DirectionLightCount");
@@ -48,16 +46,14 @@ public class Lighting
     public void SetUp(RenderGraphContext context, CullingResults cullingResults,
         ShadowSettings shadowSettings, bool useLightsPerObject, int renderingLayerMask)
     {
-        _lightBuffer = context.cmd;
+        this._lightBuffer = context.cmd;
         this._cullingResults = cullingResults;
-        //_lightBuffer.BeginSample(BufferName);
-        _shadows.SetUp(context, cullingResults, shadowSettings);
+        this._shadows.SetUp(context, cullingResults, shadowSettings);
         //在cull时unity也会计算那些光源会影响相机可视空间
         SetUpLights(useLightsPerObject, renderingLayerMask);
-        _shadows.Render();
-        //_lightBuffer.EndSample(BufferName);
+        this._shadows.Render();
         context.renderContext.ExecuteCommandBuffer(_lightBuffer);
-        _lightBuffer.Clear();
+        this._lightBuffer.Clear();
     }
 
     private void SetUpLights(bool useLightsPerObject, int renderingLayerMask)
