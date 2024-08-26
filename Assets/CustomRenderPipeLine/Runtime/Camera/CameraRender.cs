@@ -20,8 +20,11 @@ public class CameraRender
 
     private CullingResults _cullingResults;
     private ScriptableRenderContext _context;
+
     private Camera _camera;
-    private Lighting _lighting = new Lighting();
+
+    //lighting转移到了lightingPass中了
+    //private Lighting _lighting = new Lighting();
     private PostFXStack _postFXStack = new PostFXStack();
     private Material _cameraRendererMaterial;
 
@@ -135,7 +138,7 @@ public class CameraRender
 
             //rendergraph的过程
             //光照设置
-            LightingPass.Recode(renderGraph, _lighting, _cullingResults, shadowSettings,
+            ShadowTextures shadowTextures = LightingPass.Recode(renderGraph, _cullingResults, shadowSettings,
                 useLightPerObject, cameraSettings.renderingLayerMask);
 
             //应在渲染常规几何体之前渲染阴影
@@ -146,8 +149,9 @@ public class CameraRender
 
             //将绘制命令存入命令缓存区中 绘制可见物体
             //绘制不透明物体
-            GeometryPass.Recode(renderGraph, renderCamera, _cullingResults, cameraRendererTextures,
-                useLightPerObject, cameraSettings.renderingLayerMask, true);
+            GeometryPass.Recode(renderGraph, renderCamera, _cullingResults,
+                useLightPerObject, cameraSettings.renderingLayerMask, true,
+                cameraRendererTextures, shadowTextures);
 
             //绘制天空盒
             SkyBoxPass.Recode(renderGraph, renderCamera, cameraRendererTextures);
@@ -160,8 +164,9 @@ public class CameraRender
                 useColorTexture, useDepthTexture);
 
             //绘制透明物体
-            GeometryPass.Recode(renderGraph, renderCamera, _cullingResults, cameraRendererTextures,
-                useLightPerObject, cameraSettings.renderingLayerMask, false);
+            GeometryPass.Recode(renderGraph, renderCamera, _cullingResults,
+                useLightPerObject, cameraSettings.renderingLayerMask, false,
+                cameraRendererTextures, shadowTextures);
 
             //绘制不受支持的Shader 
             UnSupportedShadersPass.Recode(renderGraph, renderCamera, _cullingResults);
@@ -181,7 +186,7 @@ public class CameraRender
         }
 
         //在命令提交之前请求清理
-        _lighting.CleanUp();
+        //_lighting.CleanUp();
         context.ExecuteCommandBuffer(renderGraphParameters.commandBuffer);
         context.Submit();
         CommandBufferPool.Release(renderGraphParameters.commandBuffer);

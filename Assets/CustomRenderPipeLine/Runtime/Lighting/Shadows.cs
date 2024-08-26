@@ -79,42 +79,46 @@ public class Shadows
 
     //软阴影过滤模式着色器变体
     //平行光
-    private static string[] _directionalLightFilterKeyWords =
+    private static GlobalKeyword[] _directionalLightFilterKeyWords =
     {
-        "_DIRECTIONAL_PCF3",
-        "_DIRECTIONAL_PCF5",
-        "_DIRECTIONAL_PCF7"
+        GlobalKeyword.Create("_DIRECTIONAL_PCF3"),
+        GlobalKeyword.Create("_DIRECTIONAL_PCF5"),
+        GlobalKeyword.Create("_DIRECTIONAL_PCF7")
     };
 
     //其他光源
-    private static string[] _otherLightFilterKeyWords =
+    private static GlobalKeyword[] _otherLightFilterKeyWords =
     {
-        "_OTHER_PCF3",
-        "_OTHER_PCF5",
-        "_OTHER_PCF7"
+        GlobalKeyword.Create("_OTHER_PCF3"),
+        GlobalKeyword.Create("_OTHER_PCF5"),
+        GlobalKeyword.Create("_OTHER_PCF7")
     };
 
     //切换软阴影和抖动混合关键字
-    private static string[] _cascadeBlendKeyWords =
+    private static GlobalKeyword[] _cascadeBlendKeyWords =
     {
-        "_CASCADE_BLEND_SOFT",
-        "_CASCADE_BLEND_DITHER"
+        GlobalKeyword.Create("_CASCADE_BLEND_SOFT"),
+        GlobalKeyword.Create("_CASCADE_BLEND_DITHER")
     };
 
     //切换阴影遮罩关键子
-    private static string[] _shadowMaskKeyWords =
+    private static GlobalKeyword[] _shadowMaskKeyWords =
     {
-        "_SHADOW_MASK_ALWAYS",
-        "_SHADOW_MASK_DISTANCE",
+        GlobalKeyword.Create("_SHADOW_MASK_ALWAYS"),
+        GlobalKeyword.Create("_SHADOW_MASK_DISTANCE"),
     };
+
+    private TextureHandle _directionalShadowAtlas;
+    private TextureHandle _otherShadowAtlas;
 
     private bool _useShadowMask;
     private Vector4 _shadowAtlasSize;
 
-    public void SetUp(RenderGraphContext context, CullingResults cullingResults, ShadowSettings shadowSettings)
+    public void SetUp( //RenderGraphContext context, 需要在记录Graph时设置光照和阴影 而不是在执行Graph时设置 
+        CullingResults cullingResults, ShadowSettings shadowSettings)
     {
-        this._shadowBuffer = context.cmd;
-        this._context = context.renderContext;
+        //this._shadowBuffer = context.cmd;
+        //this._context = context.renderContext;
         this._cullingResults = cullingResults;
         this._shadowSettings = shadowSettings;
         _shadowDirectionalLightCount = 0;
@@ -122,12 +126,16 @@ public class Shadows
         _useShadowMask = false;
     }
 
-    public void Render()
+    public void Render(RenderGraphContext context)
     {
+        this._shadowBuffer = context.cmd;
+        this._context = context.renderContext;
+
         if (_shadowDirectionalLightCount > 0)
         {
             RenderDirectionalShadows();
         }
+        /*不再处理纹理缺失 因为GetShadowTextures获取时已经考虑到没有纹理的情况
         else
         {
             //必须在领取一个纹理后才可以释放它，
@@ -137,18 +145,24 @@ public class Shadows
             _shadowBuffer.GetTemporaryRT(_dirShadowAtlasID, 1, 1, 32, FilterMode.Bilinear,
                 RenderTextureFormat.Shadowmap);
         }
+        */
 
         if (_shadowOtherLightCount > 0)
         {
             RenderOtherShadows();
         }
+
+        /* 不再处理纹理缺失 因为GetShadowTextures获取时已经考虑到没有纹理的情况
         else
         {
             //如果没有其他阴影们则需要提供一张虚拟纹理 这里直接给了直接光的纹理
             _shadowBuffer.SetGlobalTexture(_otherShadowAtlasID, _dirShadowAtlasID);
         }
+        */
 
-        //_shadowBuffer.BeginSample(BufferName);
+        _shadowBuffer.SetGlobalTexture(_dirShadowAtlasID, _directionalShadowAtlas);
+        _shadowBuffer.SetGlobalTexture(_otherShadowAtlasID, _otherShadowAtlas);
+
         SetShadowKeyWorlds(_shadowMaskKeyWords,
             _useShadowMask ? QualitySettings.shadowmaskMode == ShadowmaskMode.Shadowmask ? 0 : 1 : -1);
 
@@ -169,6 +183,30 @@ public class Shadows
         ExecuteBuffer();
     }
 
+    public ShadowTextures GetShadowTextures(RenderGraph renderGraph, RenderGraphBuilder builder)
+    {
+        int atlasSize = (int)_shadowSettings.directionalLight.atlasSize;
+        var desc = new TextureDesc(atlasSize, atlasSize)
+        {
+            depthBufferBits = DepthBits.Depth32,
+            isShadowMap = true, //配置isShadowMap 可以避免分配 模板缓冲 阴影贴图不需要模板测试
+            name = "Directional Shadow Atlas",
+        };
+        _directionalShadowAtlas = _shadowDirectionalLightCount > 0
+            ? builder.WriteTexture(renderGraph.CreateTexture(desc))
+            : renderGraph.defaultResources.defaultShadowTexture;
+
+        atlasSize = (int)_shadowSettings.otherLight.atlasSize;
+        desc.width = atlasSize;
+        desc.height = atlasSize;
+        desc.name = "Other Shadow Atlas";
+        _otherShadowAtlas = _shadowOtherLightCount > 0
+            ? builder.WriteTexture(renderGraph.CreateTexture(desc))
+            : renderGraph.defaultResources.defaultShadowTexture;
+        return new ShadowTextures(_directionalShadowAtlas, _otherShadowAtlas);
+    }
+
+
     private void ExecuteBuffer()
     {
         _context.ExecuteCommandBuffer(_shadowBuffer);
@@ -184,12 +222,15 @@ public class Shadows
         //图集尺寸存储在X分量中，纹素尺寸存储在Y分量中
         _shadowAtlasSize.x = atlasSize;
         _shadowAtlasSize.y = 1.0f / atlasSize;
+        /*
         _shadowBuffer.GetTemporaryRT(_dirShadowAtlasID, atlasSize, atlasSize,
             32, //深度缓冲的位数（unity的是16位的）这里搞大一点
             FilterMode.Bilinear, //过滤模式
             RenderTextureFormat.Shadowmap); //纹理渲染类型 渲染阴影必须是这个
+        //_shadowBuffer.SetRenderTarget(_dirShadowAtlasID, RenderBufferLoadAction.DontCare,
+        */
         //指示GPU渲染这个纹理， 不关心初始状态，设置存储状态位store
-        _shadowBuffer.SetRenderTarget(_dirShadowAtlasID, RenderBufferLoadAction.DontCare,
+        _shadowBuffer.SetRenderTarget(_directionalShadowAtlas, RenderBufferLoadAction.DontCare,
             RenderBufferStoreAction.Store);
         _shadowBuffer.ClearRenderTarget(true, false, Color.clear);
 
@@ -227,12 +268,15 @@ public class Shadows
         //图集尺寸存储在X分量中，纹素尺寸存储在Y分量中
         _shadowAtlasSize.z = atlasSize;
         _shadowAtlasSize.w = 1.0f / atlasSize;
+        /*
         _shadowBuffer.GetTemporaryRT(_otherShadowAtlasID, atlasSize, atlasSize,
             32, //深度缓冲的位数（unity的是16位的）这里搞大一点
             FilterMode.Bilinear, //过滤模式
             RenderTextureFormat.Shadowmap); //纹理渲染类型 渲染阴影必须是这个
         //指示GPU渲染这个纹理， 不关心初始状态，设置存储状态位store
         _shadowBuffer.SetRenderTarget(_otherShadowAtlasID, RenderBufferLoadAction.DontCare,
+        */
+        _shadowBuffer.SetRenderTarget(_otherShadowAtlas, RenderBufferLoadAction.DontCare,
             RenderBufferStoreAction.Store);
         _shadowBuffer.ClearRenderTarget(true, false, Color.clear);
 
@@ -540,18 +584,18 @@ public class Shadows
             1.0f / cullingSphere.w, texelSize);
     }
 
-    private void SetShadowKeyWorlds(string[] keyWords, int enableIndex)
+    private void SetShadowKeyWorlds(GlobalKeyword[] keyWords, int enableIndex)
     {
         for (int i = 0; i < keyWords.Length; i++)
         {
-            if (i == enableIndex)
-            {
-                _shadowBuffer.EnableShaderKeyword(keyWords[i]);
-            }
-            else
-            {
-                _shadowBuffer.DisableShaderKeyword(keyWords[i]);
-            }
+            //if (i == enableIndex)
+            //{
+            _shadowBuffer.SetKeyword(keyWords[i], i == enableIndex);
+            //}
+            //else
+            //{
+            //    _shadowBuffer.DisableShaderKeyword(keyWords[i]);
+            //}
         }
     }
 
@@ -567,6 +611,7 @@ public class Shadows
         _otherShadowTiles[index] = data;
     }
 
+    /* 使用RenderGraph 及 TextureHandle 之后 已经没有纹理须要释放
     public void CleaUp()
     {
         //使用完临时纹理后需要释放它
@@ -578,4 +623,5 @@ public class Shadows
 
         ExecuteBuffer();
     }
+    */
 }
