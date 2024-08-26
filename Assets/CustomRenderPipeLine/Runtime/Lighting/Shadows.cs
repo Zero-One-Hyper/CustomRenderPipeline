@@ -114,11 +114,9 @@ public class Shadows
     private bool _useShadowMask;
     private Vector4 _shadowAtlasSize;
 
-    public void SetUp( //RenderGraphContext context, 需要在记录Graph时设置光照和阴影 而不是在执行Graph时设置 
-        CullingResults cullingResults, ShadowSettings shadowSettings)
+    public void SetUp(CullingResults cullingResults, ShadowSettings shadowSettings)
     {
-        //this._shadowBuffer = context.cmd;
-        //this._context = context.renderContext;
+        //需要在记录Graph时设置光照和阴影 而不是在执行Graph时设置 
         this._cullingResults = cullingResults;
         this._shadowSettings = shadowSettings;
         _shadowDirectionalLightCount = 0;
@@ -135,30 +133,11 @@ public class Shadows
         {
             RenderDirectionalShadows();
         }
-        /*不再处理纹理缺失 因为GetShadowTextures获取时已经考虑到没有纹理的情况
-        else
-        {
-            //必须在领取一个纹理后才可以释放它，
-            //但是如WebGL2.0，不领取纹理会出现问题，因为它将领取纹理和采样器绑在了一起
-            //若纹理丢失会返回一个默认的纹理，这个纹理与阴影采样器是不兼容的
-            //可以用一个shader变体解决，或者像下面这样获取一个1x1的纹理
-            _shadowBuffer.GetTemporaryRT(_dirShadowAtlasID, 1, 1, 32, FilterMode.Bilinear,
-                RenderTextureFormat.Shadowmap);
-        }
-        */
 
         if (_shadowOtherLightCount > 0)
         {
             RenderOtherShadows();
         }
-
-        /* 不再处理纹理缺失 因为GetShadowTextures获取时已经考虑到没有纹理的情况
-        else
-        {
-            //如果没有其他阴影们则需要提供一张虚拟纹理 这里直接给了直接光的纹理
-            _shadowBuffer.SetGlobalTexture(_otherShadowAtlasID, _dirShadowAtlasID);
-        }
-        */
 
         _shadowBuffer.SetGlobalTexture(_dirShadowAtlasID, _directionalShadowAtlas);
         _shadowBuffer.SetGlobalTexture(_otherShadowAtlasID, _otherShadowAtlas);
@@ -179,7 +158,6 @@ public class Shadows
 
         //图集尺寸 平行光存储在X分量中，纹素尺寸存储在Y分量中 其他光源的存储在z和w中
         _shadowBuffer.SetGlobalVector(_shadowAtlasSizeID, _shadowAtlasSize);
-        //_shadowBuffer.EndSample(BufferName);
         ExecuteBuffer();
     }
 
@@ -222,13 +200,6 @@ public class Shadows
         //图集尺寸存储在X分量中，纹素尺寸存储在Y分量中
         _shadowAtlasSize.x = atlasSize;
         _shadowAtlasSize.y = 1.0f / atlasSize;
-        /*
-        _shadowBuffer.GetTemporaryRT(_dirShadowAtlasID, atlasSize, atlasSize,
-            32, //深度缓冲的位数（unity的是16位的）这里搞大一点
-            FilterMode.Bilinear, //过滤模式
-            RenderTextureFormat.Shadowmap); //纹理渲染类型 渲染阴影必须是这个
-        //_shadowBuffer.SetRenderTarget(_dirShadowAtlasID, RenderBufferLoadAction.DontCare,
-        */
         //指示GPU渲染这个纹理， 不关心初始状态，设置存储状态位store
         _shadowBuffer.SetRenderTarget(_directionalShadowAtlas, RenderBufferLoadAction.DontCare,
             RenderBufferStoreAction.Store);
@@ -268,14 +239,6 @@ public class Shadows
         //图集尺寸存储在X分量中，纹素尺寸存储在Y分量中
         _shadowAtlasSize.z = atlasSize;
         _shadowAtlasSize.w = 1.0f / atlasSize;
-        /*
-        _shadowBuffer.GetTemporaryRT(_otherShadowAtlasID, atlasSize, atlasSize,
-            32, //深度缓冲的位数（unity的是16位的）这里搞大一点
-            FilterMode.Bilinear, //过滤模式
-            RenderTextureFormat.Shadowmap); //纹理渲染类型 渲染阴影必须是这个
-        //指示GPU渲染这个纹理， 不关心初始状态，设置存储状态位store
-        _shadowBuffer.SetRenderTarget(_otherShadowAtlasID, RenderBufferLoadAction.DontCare,
-        */
         _shadowBuffer.SetRenderTarget(_otherShadowAtlas, RenderBufferLoadAction.DontCare,
             RenderBufferStoreAction.Store);
         _shadowBuffer.ClearRenderTarget(true, false, Color.clear);
@@ -588,14 +551,7 @@ public class Shadows
     {
         for (int i = 0; i < keyWords.Length; i++)
         {
-            //if (i == enableIndex)
-            //{
             _shadowBuffer.SetKeyword(keyWords[i], i == enableIndex);
-            //}
-            //else
-            //{
-            //    _shadowBuffer.DisableShaderKeyword(keyWords[i]);
-            //}
         }
     }
 
@@ -610,18 +566,4 @@ public class Shadows
         data.w = bias;
         _otherShadowTiles[index] = data;
     }
-
-    /* 使用RenderGraph 及 TextureHandle 之后 已经没有纹理须要释放
-    public void CleaUp()
-    {
-        //使用完临时纹理后需要释放它
-        _shadowBuffer.ReleaseTemporaryRT(_dirShadowAtlasID); //直接光的阴影纹理一直都有
-        if (_shadowOtherLightCount > 0)
-        {
-            _shadowBuffer.ReleaseTemporaryRT(_otherShadowAtlasID);
-        }
-
-        ExecuteBuffer();
-    }
-    */
 }

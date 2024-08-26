@@ -22,9 +22,6 @@ public class CameraRender
     private ScriptableRenderContext _context;
 
     private Camera _camera;
-
-    //lighting转移到了lightingPass中了
-    //private Lighting _lighting = new Lighting();
     private PostFXStack _postFXStack = new PostFXStack();
     private Material _cameraRendererMaterial;
 
@@ -186,12 +183,10 @@ public class CameraRender
         }
 
         //在命令提交之前请求清理
-        //_lighting.CleanUp();
         context.ExecuteCommandBuffer(renderGraphParameters.commandBuffer);
         context.Submit();
         CommandBufferPool.Release(renderGraphParameters.commandBuffer);
     }
-
 
     public void Dispose()
     {

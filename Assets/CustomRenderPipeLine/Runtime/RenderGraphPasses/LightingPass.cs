@@ -6,17 +6,6 @@ using UnityEngine.Rendering;
 public class LightingPass
 {
     private static ProfilingSampler _lightingSampler = new ProfilingSampler("LightingSampler");
-    //private Lighting _lighting = new Lighting();//lighting也不需要了·
-
-    /*lighting现在自己追踪这些东西
-    private CullingResults _cullingResults;
-
-    private ShadowSettings _shadowSettings;
-
-    private bool _useLightsPerObjet;
-
-    private int _renderingLayerMask;
-    */
 
     private const int MaxDirectionLightCount = 4;
     private const int MaxOtherLightCount = 64;
@@ -61,53 +50,30 @@ public class LightingPass
 
     private Shadows _shadows = new Shadows();
 
-    //将lighting转移到了lightPass中
-    //private void Render(RenderGraphContext context)
-    //{
-    //    _lighting.Render(context
-    //        /*, _cullingResults, _shadowSettings,
-    //        _useLightsPerObjet, _renderingLayerMask
-    //        */);
-    //}
-
     public static ShadowTextures Recode(RenderGraph renderGraph,
-        //Lighting lighting, //lighting在lightingpass中new了
         CullingResults cullingResults, ShadowSettings shadowSettings,
         bool useLightsPerObjects, int renderingLayerMask)
     {
         using RenderGraphBuilder builder = renderGraph.AddRenderPass(
             "Lighting Setup", out LightingPass lightingPass, _lightingSampler);
-        /*
-        lightingPass._lighting = lighting;
-        lightingPass._cullingResults = cullingResults;
-        lightingPass._shadowSettings = shadowSettings;
-        lightingPass._useLightsPerObjet = useLightsPerObjects;
-        lightingPass._renderingLayerMask = renderingLayerMask;
-        */
         lightingPass.SetUp(cullingResults, shadowSettings, useLightsPerObjects, renderingLayerMask);
         builder.SetRenderFunc<LightingPass>((pass, context) => pass.Render(context));
         builder.AllowPassCulling(false); //没有使用阴影贴图时也不可以剔除 它还配置了所有光照数据
         return lightingPass.GetShadowTextures(renderGraph, builder);
     }
 
-    private void SetUp( //RenderGraphContext context, 
-        CullingResults cullingResults,
+    private void SetUp(CullingResults cullingResults,
         ShadowSettings shadowSettings, bool useLightsPerObject, int renderingLayerMask)
     {
-        //this._lightBuffer = context.cmd;
         this._cullingResults = cullingResults;
         this._useLightsPerObject = useLightsPerObject;
         this._shadows.SetUp(cullingResults, shadowSettings);
         //在cull时unity也会计算那些光源会影响相机可视空间
-        SetUpLights( /*useLightsPerObject,*/ renderingLayerMask);
-        /*现在只会在渲染光照后再去渲染阴影
-        this._shadows.Render(context);
-        context.renderContext.ExecuteCommandBuffer(_lightBuffer);
-        this._lightBuffer.Clear();
-        */
+        SetUpLights(renderingLayerMask);
+        //现在只会在渲染光照后再去渲染阴影
     }
 
-    private void SetUpLights( /*bool useLightsPerObject,*/ int renderingLayerMask)
+    private void SetUpLights(int renderingLayerMask)
     {
         //获取那些光源可以影响视锥体
         NativeArray<VisibleLight> visibleLights = this._cullingResults.visibleLights;
@@ -173,15 +139,8 @@ public class LightingPass
             //将调整后的索引map发送回unity
             _cullingResults.SetLightIndexMap(indexMap);
             indexMap.Dispose();
-            //改为在render中使用commandbuffer设置
             //注意：启用著对象光照后 GPU实例化效率较低 因为只有灯光计数和索引列表匹配的对象才会分组
-            //UnityEngine.Shader.EnableKeyword(_lightsPerObjectKeyword);
-        } /*
-        else
-        {
-            //改为在render中使用commandbuffer设置
-            //UnityEngine.Shader.DisableKeyword(_lightsPerObjectKeyword);
-        }*/
+        }
     }
 
     private void Render(RenderGraphContext context)
@@ -214,7 +173,7 @@ public class LightingPass
         _lightBuffer.Clear();
     }
 
-    public ShadowTextures GetShadowTextures(RenderGraph renderGraph, RenderGraphBuilder builder)
+    private ShadowTextures GetShadowTextures(RenderGraph renderGraph, RenderGraphBuilder builder)
     {
         return _shadows.GetShadowTextures(renderGraph, builder);
     }
@@ -261,10 +220,4 @@ public class LightingPass
         _otherLightSpotAngles[index] = new Vector4(angleRangeInv, -outerCos * angleRangeInv);
         _otherShadowData[index] = _shadows.ReserveOtherShadows(light, visibleIndex);
     }
-    /*shadow已经不再使用cleanup清理了
-    public void CleanUp()
-    {
-        _shadows.CleaUp();
-    }
-    */
 }
