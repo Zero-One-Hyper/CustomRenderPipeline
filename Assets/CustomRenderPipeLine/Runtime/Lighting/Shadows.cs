@@ -119,9 +119,9 @@ public class Shadows
         //需要在记录Graph时设置光照和阴影 而不是在执行Graph时设置 
         this._cullingResults = cullingResults;
         this._shadowSettings = shadowSettings;
-        _shadowDirectionalLightCount = 0;
-        _shadowOtherLightCount = 0;
-        _useShadowMask = false;
+        this._shadowDirectionalLightCount = 0;
+        this._shadowOtherLightCount = 0;
+        this._useShadowMask = false;
     }
 
     public void Render(RenderGraphContext context)
@@ -277,9 +277,9 @@ public class Shadows
     private void DoRenderDirectionalShadows(int lightIndex, int split, int tileSize)
     {
         ShadowedDirectionalLight shadowedDirectionalLight = _shadowedDirectionalLights[lightIndex];
-        //渲染阴影的设置
+        //渲染阴影的设置   阴影贴图的投影模式 平行光一般为BatchCullingProjectionType.Orthographic
         var shadowDrawingSettings = new ShadowDrawingSettings(_cullingResults,
-            shadowedDirectionalLight.visibleLightIndex)
+            shadowedDirectionalLight.visibleLightIndex, BatchCullingProjectionType.Orthographic)
         {
             useRenderingLayerMaskTest = true,
         };
@@ -339,9 +339,9 @@ public class Shadows
     private void DoRenderSpotShadows(int lightIndex, int split, int tileSize)
     {
         ShadowedOtherLight shadowedOtherLight = _shadowedOtherLights[lightIndex];
-        //渲染阴影的设置
+        //渲染阴影的设置   阴影贴图的投影模式 点光源和聚光灯一般为BatchCullingProjectionType.Perspective
         var shadowDrawingSettings = new ShadowDrawingSettings(_cullingResults,
-            shadowedOtherLight.visibleLightIndex)
+            shadowedOtherLight.visibleLightIndex, BatchCullingProjectionType.Perspective)
         {
             useRenderingLayerMaskTest = true,
         };
@@ -373,9 +373,9 @@ public class Shadows
     private void DoRenderPointShadows(int lightIndex, int split, int tileSize)
     {
         ShadowedOtherLight shadowedOtherLight = _shadowedOtherLights[lightIndex];
-        //渲染阴影的设置
+        //渲染阴影的设置  阴影贴图的投影模式 点光源和聚光灯一般为BatchCullingProjectionType.Perspective
         var shadowDrawingSettings = new ShadowDrawingSettings(_cullingResults,
-            shadowedOtherLight.visibleLightIndex)
+            shadowedOtherLight.visibleLightIndex, BatchCullingProjectionType.Perspective)
         {
             useRenderingLayerMaskTest = true,
         };

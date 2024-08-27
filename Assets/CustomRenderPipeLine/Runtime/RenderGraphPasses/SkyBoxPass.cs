@@ -28,7 +28,8 @@ public class SkyBoxPass
             //天空盒需要读写颜色，读深度 不需要写深度
             builder.ReadWriteTexture(rendererTextures.colorAttachment);
             builder.ReadTexture(rendererTextures.depthAttachment);
-            builder.SetRenderFunc<SkyBoxPass>((pass, context) => pass.Render(context));
+            builder.SetRenderFunc<SkyBoxPass>(
+                static (pass, context) => pass.Render(context));
         }
     }
 }

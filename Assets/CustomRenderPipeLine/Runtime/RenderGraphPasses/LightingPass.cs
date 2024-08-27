@@ -57,7 +57,8 @@ public class LightingPass
         using RenderGraphBuilder builder = renderGraph.AddRenderPass(
             "Lighting Setup", out LightingPass lightingPass, _lightingSampler);
         lightingPass.SetUp(cullingResults, shadowSettings, useLightsPerObjects, renderingLayerMask);
-        builder.SetRenderFunc<LightingPass>((pass, context) => pass.Render(context));
+        builder.SetRenderFunc<LightingPass>(
+            static (pass, context) => pass.Render(context));
         builder.AllowPassCulling(false); //没有使用阴影贴图时也不可以剔除 它还配置了所有光照数据
         return lightingPass.GetShadowTextures(renderGraph, builder);
     }

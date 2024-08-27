@@ -44,7 +44,8 @@ public class GizmosPass
                 gizmosPass._depthTextureHandle = builder.ReadTexture(rendererTextures.depthAttachment);
             }
 
-            builder.SetRenderFunc<GizmosPass>((pass, context) => pass.Render(context));
+            builder.SetRenderFunc<GizmosPass>(
+                static (pass, context) => pass.Render(context));
         }
 #endif
     }

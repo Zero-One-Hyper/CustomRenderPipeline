@@ -65,6 +65,8 @@ public class CameraRender
             postFXSettings = cameraSettings.postFXSettings ?? postFXSettings;
         }
 
+        bool hasActivePostFX = postFXSettings != null && postFXSettings.AreApplicableTo(renderCamera);
+
         //拿到实际的渲染缩放
         float renderScale = cameraSettings.GetRenderScale(cameraBufferSettings.renderScale);
         bool useRenderScaledRendering = renderScale <= 0.99f || renderScale >= 1.01f;
@@ -91,7 +93,9 @@ public class CameraRender
         //使用context的Cull方法来进行剔除 (这里使用ref来避免对parmeters的拷贝，因为parameters可能很大）
         _cullingResults = _context.Cull(ref parameters);
 
-        bool useHDR = cameraBufferSettings.allowHDR && renderCamera.allowHDR;
+        //bool useHDR = cameraBufferSettings.allowHDR && renderCamera.allowHDR;
+        cameraBufferSettings.allowHDR &= renderCamera.allowHDR;
+
         Vector2Int bufferSize = default;
         if (useRenderScaledRendering)
         {
@@ -107,13 +111,9 @@ public class CameraRender
 
         //设置FX堆栈及验证FXAA
         cameraBufferSettings.fxaa.enable &= cameraSettings.allowFXAA;
-        _postFXStack.SetUp(this._camera, postFXSettings, useHDR, cameraSettings.keepAlpha,
-            colorLUTResolution, bufferSize,
-            cameraSettings.finalBlendMode, cameraBufferSettings.bicubicRescaling,
-            cameraBufferSettings.fxaa);
         //将是否使用中间纹理挪到setup外面来
         bool useIntermediateBuffer = useRenderScaledRendering || useColorTexture ||
-                                     useDepthTexture || _postFXStack.IsActive;
+                                     useDepthTexture || hasActivePostFX;
 
 
         var renderGraphParameters = new RenderGraphParameters()
@@ -141,7 +141,8 @@ public class CameraRender
             //应在渲染常规几何体之前渲染阴影
             //设置摄像机参数
             CameraRendererTextures cameraRendererTextures =
-                SetUpPass.Recode(renderGraph, renderCamera, bufferSize, useIntermediateBuffer, useHDR,
+                SetUpPass.Recode(renderGraph, renderCamera, bufferSize, useIntermediateBuffer,
+                    cameraBufferSettings.allowHDR,
                     useColorTexture, useDepthTexture);
 
             //将绘制命令存入命令缓存区中 绘制可见物体
@@ -168,9 +169,16 @@ public class CameraRender
             //绘制不受支持的Shader 
             UnSupportedShadersPass.Recode(renderGraph, renderCamera, _cullingResults);
             //后处理
-            if (_postFXStack.IsActive)
+            if (hasActivePostFX)
             {
-                PostFXPass.Record(renderGraph, _postFXStack, cameraRendererTextures);
+                _postFXStack.CameraBufferSettings = cameraBufferSettings;
+                _postFXStack.BufferSize = bufferSize;
+                _postFXStack.Camera = renderCamera;
+                _postFXStack.FinalBlendMode = cameraSettings.finalBlendMode;
+                _postFXStack.PostFXSettings = postFXSettings;
+                PostFXPass.Record(renderGraph, _postFXStack,
+                    colorLUTResolution, cameraSettings.keepAlpha,
+                    cameraRendererTextures);
             }
             else if (useIntermediateBuffer)
             {

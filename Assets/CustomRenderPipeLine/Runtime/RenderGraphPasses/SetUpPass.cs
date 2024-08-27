@@ -113,7 +113,8 @@ public class SetUpPass
             depthAttachments = setUpPass._depthAttachment;
         }
 
-        builder.SetRenderFunc<SetUpPass>((pass, context) => pass.Render(context));
+        builder.SetRenderFunc<SetUpPass>(
+            static (pass, context) => pass.Render(context));
 
         return new CameraRendererTextures(colorAttachments, depthAttachments,
             colorCopy, depthCopy);

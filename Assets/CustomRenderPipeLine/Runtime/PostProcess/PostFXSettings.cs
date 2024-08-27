@@ -1,4 +1,5 @@
 using System;
+using UnityEditor;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Rendering/Custom/Post FX Settings")]
@@ -207,4 +208,17 @@ public class PostFXSettings : ScriptableObject
     public ChannelMixerSettings ChannelMixerSetting => channelMixerSettings;
 
     public ShadowsMidtonesHighLightsSettings ShadowsMidtonesHighLightsSetting => shadowsMidtonesHighLightsSettings;
+
+    //将相机后处理是否有效放在FXSetting中
+    public bool AreApplicableTo(Camera camera)
+    {
+#if UNITY_EDITOR
+        if (camera.cameraType == CameraType.SceneView &&
+            !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
+        {
+            return false;
+        }
+#endif
+        return camera.cameraType <= CameraType.SceneView;
+    }
 }

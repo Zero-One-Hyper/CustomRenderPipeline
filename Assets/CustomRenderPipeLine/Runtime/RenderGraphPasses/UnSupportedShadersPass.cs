@@ -57,7 +57,8 @@ public class UnSupportedShadersPass
         //注册渲染列表Handle
         unSupportedShadersPass._unSupprotedRenderListHandle = builder.UseRendererList(handle);
 
-        builder.SetRenderFunc<UnSupportedShadersPass>((pass, context) => pass.Render(context));
+        builder.SetRenderFunc<UnSupportedShadersPass>(
+            static (pass, context) => pass.Render(context));
 #endif
     }
 }
