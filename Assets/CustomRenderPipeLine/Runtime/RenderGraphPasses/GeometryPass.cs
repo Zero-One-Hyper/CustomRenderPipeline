@@ -37,7 +37,7 @@ public class GeometryPass
     //使用RenderGraph时动态批处理会被始终禁用 GPU实例化会始终开启
     public static void Recode(RenderGraph renderGraph, Camera renderCamera, CullingResults cullingResults,
         bool useLightsPerObject, int renderingLayerMask, bool isOpaque,
-        in CameraRendererTextures rendererTextures, in ShadowTextures shadowTextures)
+        in CameraRendererTextures rendererTextures, in LightResource lightResource)
     {
         ProfilingSampler sampler = isOpaque ? _geometryOpaqueSampler : _geometryTransparentSampler;
         using RenderGraphBuilder builder = renderGraph.AddRenderPass(
@@ -82,9 +82,14 @@ public class GeometryPass
             }
         }
 
+        builder.ReadComputeBuffer(lightResource.directionLightDataBuffer);
+        builder.ReadComputeBuffer(lightResource.otherLightDataBuffer);
         //获取阴影贴图 这里就是只要配置了才会使用(不错的资源管理方式)
-        builder.ReadTexture(shadowTextures.directionalAtlas);
-        builder.ReadTexture(shadowTextures.otherAtlas);
+        builder.ReadTexture(lightResource.shadowResource.directionalAtlas);
+        builder.ReadTexture(lightResource.shadowResource.otherAtlas);
+        builder.ReadComputeBuffer(lightResource.shadowResource.directionShadowCascadesBuffer);
+        builder.ReadComputeBuffer(lightResource.shadowResource.directionShadowMatricesBuffer);
+        builder.ReadComputeBuffer(lightResource.shadowResource.otherShadowDataBuffer);
 
         builder.SetRenderFunc<GeometryPass>(
             static (pass, context) => pass.Render(context));

@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 
-public class Shadows
+public partial class Shadows
 {
     private struct ShadowedDirectionalLight
     {
@@ -47,16 +47,22 @@ public class Shadows
     private static int _dirShadowMatricesID = UnityEngine.Shader.PropertyToID("_DirectionalShadowMatrices");
 
     private static int _otherShadowAtlasID = UnityEngine.Shader.PropertyToID("_OtherLightShadowAtlas");
+
+    private static int _otherShadowDataID = UnityEngine.Shader.PropertyToID("_OtherShadowData");
+    /*
+    //使用到了级联阴影，所以每个变换矩阵都要乘4倍大小
     private static int _otherShadowMatricesID = UnityEngine.Shader.PropertyToID("_OtherLightShadowMatrices");
     private static int _otherShadowTilesID = UnityEngine.Shader.PropertyToID("_OtherShadowTiles");
+    */
 
-    //用于级联阴影球形剔除
+    //用于级联阴影球形剔除 其中directionShadowCascade中的CascadeData用于消除不正确的条纹状阴影暗斑
+    private static int _directionShadowCascadeID =
+        UnityEngine.Shader.PropertyToID("_DirectionShadowCascade");
+
     private static int _cascadeCountID = UnityEngine.Shader.PropertyToID("_CascadeCount");
+    //private static int _cascadeCullingSpheresId = UnityEngine.Shader.PropertyToID("_CascadeCullingSpheres");
+    //private static int _cascadeDataID = UnityEngine.Shader.PropertyToID("_CascadeData");
 
-    private static int _cascadeCullingSpheresId = UnityEngine.Shader.PropertyToID("_CascadeCullingSpheres");
-
-    //用于消除不正确的条纹状阴影暗斑
-    private static int _cascadeDataID = UnityEngine.Shader.PropertyToID("_CascadeData");
 
     //使用计算好的淡化距离替换最大距离
     private static int _shadowDistanceFadeID = UnityEngine.Shader.PropertyToID("_ShadowDistanceFade");
@@ -67,15 +73,22 @@ public class Shadows
     private static int _shadowAtlasSizeID = UnityEngine.Shader.PropertyToID("_ShadowAtlasSize");
 
 
-    private static Vector4[] _cascadeCullingSpheres = new Vector4[MaxCascades];
-    private static Vector4[] _cascadeData = new Vector4[MaxCascades];
+    //private static Vector4[] _cascadeCullingSpheres = new Vector4[MaxCascades];
+    //private static Vector4[] _cascadeData = new Vector4[MaxCascades];
 
-    private static Vector4[] _otherShadowTiles = new Vector4[MaxShadowsOtherLightCount];
+    private static DirectionShadowCascade[] _directionShadowCascades =
+        new DirectionShadowCascade[MaxCascades];
 
-    //使用到了级联阴影，所以每个变换矩阵都要乘4倍大小
     private static Matrix4x4[] _dirShadowMatrices = new Matrix4x4[MaxShadowsDirectionLightCount * MaxCascades];
 
-    private static Matrix4x4[] _otherShadowMatrices = new Matrix4x4[MaxShadowsOtherLightCount];
+    //private static Vector4[] _otherShadowTiles = new Vector4[MaxShadowsOtherLightCount];
+    //private static Matrix4x4[] _otherShadowMatrices = new Matrix4x4[MaxShadowsOtherLightCount];
+    private static readonly OtherShadowData[] OtherShadowDatas = new OtherShadowData[MaxShadowsOtherLightCount];
+
+
+    private ComputeBufferHandle _otherShadowDataBuffer;
+    private ComputeBufferHandle _directionShadowCascadesBuffer;
+    private ComputeBufferHandle _directionShadowMatricesBuffer;
 
     //软阴影过滤模式着色器变体
     //平行光
@@ -161,7 +174,7 @@ public class Shadows
         ExecuteBuffer();
     }
 
-    public ShadowTextures GetShadowTextures(RenderGraph renderGraph, RenderGraphBuilder builder)
+    public ShadowResource GetResources(RenderGraph renderGraph, RenderGraphBuilder builder)
     {
         int atlasSize = (int)_shadowSettings.directionalLight.atlasSize;
         var desc = new TextureDesc(atlasSize, atlasSize)
@@ -173,6 +186,20 @@ public class Shadows
         _directionalShadowAtlas = _shadowDirectionalLightCount > 0
             ? builder.WriteTexture(renderGraph.CreateTexture(desc))
             : renderGraph.defaultResources.defaultShadowTexture;
+        _directionShadowCascadesBuffer = builder.WriteComputeBuffer(
+            renderGraph.CreateComputeBuffer(new ComputeBufferDesc
+            {
+                name = "Direction Light Shadow Cascades",
+                stride = DirectionShadowCascade.Stride,
+                count = MaxCascades,
+            }));
+        _directionShadowMatricesBuffer = builder.WriteComputeBuffer(
+            renderGraph.CreateComputeBuffer(new ComputeBufferDesc
+            {
+                name = "Direction Light Shadow Matrix",
+                stride = 4 * 16,
+                count = MaxShadowsDirectionLightCount * MaxCascades,
+            }));
 
         atlasSize = (int)_shadowSettings.otherLight.atlasSize;
         desc.width = atlasSize;
@@ -181,7 +208,17 @@ public class Shadows
         _otherShadowAtlas = _shadowOtherLightCount > 0
             ? builder.WriteTexture(renderGraph.CreateTexture(desc))
             : renderGraph.defaultResources.defaultShadowTexture;
-        return new ShadowTextures(_directionalShadowAtlas, _otherShadowAtlas);
+
+        _otherShadowDataBuffer = builder.WriteComputeBuffer(
+            renderGraph.CreateComputeBuffer(new ComputeBufferDesc
+            {
+                name = "Other Shadow Data",
+                stride = OtherShadowData.Stride,
+                count = MaxShadowsOtherLightCount,
+            }));
+
+        return new ShadowResource(_directionalShadowAtlas, _otherShadowAtlas,
+            _directionShadowCascadesBuffer, _directionShadowMatricesBuffer, _otherShadowDataBuffer);
     }
 
 
@@ -218,11 +255,22 @@ public class Shadows
             DoRenderDirectionalShadows(i, split, tileSize);
         }
 
-        _shadowBuffer.SetGlobalVectorArray(_cascadeCullingSpheresId, _cascadeCullingSpheres);
         //消除条状阴影暗斑
-        _shadowBuffer.SetGlobalVectorArray(_cascadeDataID, _cascadeData);
+        //_shadowBuffer.SetGlobalVectorArray(_cascadeCullingSpheresId, _cascadeCullingSpheres);
+        //_shadowBuffer.SetGlobalVectorArray(_cascadeDataID, _cascadeData);
+
+        //设置级联参数 参数中的cascade data 用于消除条状阴影暗斑
+        _shadowBuffer.SetBufferData(_directionShadowCascadesBuffer, _directionShadowCascades,
+            0, 0, _shadowSettings.directionalLight.cascadeCount);
+        _shadowBuffer.SetGlobalBuffer(_directionShadowCascadeID, _directionShadowCascadesBuffer);
+
         //渲染完所有有阴影的光源
-        _shadowBuffer.SetGlobalMatrixArray(_dirShadowMatricesID, _dirShadowMatrices);
+        //_shadowBuffer.SetGlobalMatrixArray(_dirShadowMatricesID, _dirShadowMatrices);
+        _shadowBuffer.SetBufferData(_directionShadowMatricesBuffer, _dirShadowMatrices,
+            0, 0,
+            _shadowDirectionalLightCount * _shadowSettings.directionalLight.cascadeCount);
+        _shadowBuffer.SetGlobalBuffer(_dirShadowMatricesID, _directionShadowMatricesBuffer);
+
         //过滤模式keywords只有3个
         SetShadowKeyWorlds(_directionalLightFilterKeyWords, (int)_shadowSettings.directionalLight.filter - 1);
         //软阴影 和 抖动混合 的keyWorld 
@@ -266,8 +314,12 @@ public class Shadows
         }
 
         //渲染完所有有阴影的光源
-        _shadowBuffer.SetGlobalMatrixArray(_otherShadowMatricesID, _otherShadowMatrices);
-        _shadowBuffer.SetGlobalVectorArray(_otherShadowTilesID, _otherShadowTiles);
+        //_shadowBuffer.SetGlobalMatrixArray(_otherShadowMatricesID, _otherShadowMatrices);
+        //_shadowBuffer.SetGlobalVectorArray(_otherShadowTilesID, _otherShadowTiles);
+        _shadowBuffer.SetBufferData(_otherShadowDataBuffer, OtherShadowDatas,
+            0, 0, _shadowOtherLightCount);
+        _shadowBuffer.SetGlobalBuffer(_otherShadowDataID, _otherShadowDataBuffer);
+
         //过滤模式keyworlds只有3个
         SetShadowKeyWorlds(_otherLightFilterKeyWords, (int)_shadowSettings.otherLight.filterMode - 1);
         _shadowBuffer.EndSample("Other Shadows");
@@ -312,8 +364,11 @@ public class Shadows
             {
                 //这个cullingSphere是从摄像机出发计算的
                 //每个光源的级联都是等价的  只用做一次
-                Vector4 cullingSphere = shadowSplitData.cullingSphere;
-                SetCascadeData(i, cullingSphere, tileSize);
+                //Vector4 cullingSphere = shadowSplitData.cullingSphere;
+                //SetCascadeData(i, cullingSphere, tileSize);
+                _directionShadowCascades[i] = new DirectionShadowCascade(
+                    shadowSplitData.cullingSphere, tileSize,
+                    _shadowSettings.directionalLight.filter);
             }
 
             int tileIndex = tileOffset + i;
@@ -360,9 +415,12 @@ public class Shadows
         float bias = shadowedOtherLight.normalBias * filterSize * 1.414f;
         Vector2 offset = SetTileViewport(lightIndex, split, tileSize);
         float tileScale = 1.0f / split;
-        SetOtherShadowTileData(lightIndex, offset, tileScale, bias);
 
-        _otherShadowMatrices[lightIndex] = ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileScale);
+        //SetOtherShadowTileData(lightIndex, offset, tileScale, bias);
+        //_otherShadowMatrices[lightIndex] = ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileScale);
+        OtherShadowDatas[lightIndex] = new OtherShadowData(offset, tileScale, bias,
+            _shadowAtlasSize.w * 0.5f, ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileScale));
+
         _shadowBuffer.SetViewProjectionMatrices(viewMatrix, projMatrix);
         _shadowBuffer.SetGlobalDepthBias(0f, shadowedOtherLight.slopeScaleBias);
         ExecuteBuffer();
@@ -397,9 +455,12 @@ public class Shadows
 
             int tileIndex = lightIndex + i;
             Vector2 offset = SetTileViewport(tileIndex, split, tileSize);
-            SetOtherShadowTileData(tileIndex, offset, tileScale, bias);
 
-            _otherShadowMatrices[tileIndex] = ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileScale);
+            //SetOtherShadowTileData(tileIndex, offset, tileScale, bias);
+            //_otherShadowMatrices[tileIndex] = ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileScale);
+            OtherShadowDatas[tileIndex] = new OtherShadowData(offset, tileScale, bias,
+                _shadowAtlasSize.w * 0.5f, ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileScale));
+
             _shadowBuffer.SetViewProjectionMatrices(viewMatrix, projMatrix);
             _shadowBuffer.SetGlobalDepthBias(0f, shadowedOtherLight.slopeScaleBias);
             ExecuteBuffer();
@@ -531,6 +592,15 @@ public class Shadows
         return matrix;
     }
 
+    private void SetShadowKeyWorlds(GlobalKeyword[] keyWords, int enableIndex)
+    {
+        for (int i = 0; i < keyWords.Length; i++)
+        {
+            _shadowBuffer.SetKeyword(keyWords[i], i == enableIndex);
+        }
+    }
+
+    /*
     private void SetCascadeData(int index, Vector4 cullingSphere, float tileSize)
     {
         //把求级联阴影倒数部分放到C#来做
@@ -546,15 +616,9 @@ public class Shadows
         _cascadeData[index] = new Vector4(
             1.0f / cullingSphere.w, texelSize);
     }
+    */
 
-    private void SetShadowKeyWorlds(GlobalKeyword[] keyWords, int enableIndex)
-    {
-        for (int i = 0; i < keyWords.Length; i++)
-        {
-            _shadowBuffer.SetKeyword(keyWords[i], i == enableIndex);
-        }
-    }
-
+    /*
     private void SetOtherShadowTileData(int index, Vector2 offset, float scale, float bias)
     {
         //保证钳位采样
@@ -566,4 +630,5 @@ public class Shadows
         data.w = bias;
         _otherShadowTiles[index] = data;
     }
+    */
 }

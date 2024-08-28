@@ -41,8 +41,8 @@ public class PostFXPass
     private void Render(RenderGraphContext context)
     {
         CommandBuffer fxBuffer = context.cmd;
-        fxBuffer.SetGlobalFloat(_finalSrcBlendID, 1f);
-        fxBuffer.SetGlobalFloat(_finalDstBlendID, 0f);
+        fxBuffer.SetGlobalFloat(FinalSrcBlendID, 1f);
+        fxBuffer.SetGlobalFloat(FinalDstBlendID, 0f);
 
         RenderTargetIdentifier finalSource;
 

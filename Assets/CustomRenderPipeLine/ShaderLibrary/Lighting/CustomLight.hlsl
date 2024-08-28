@@ -4,23 +4,46 @@
 #include "Assets/CustomRenderPipeLine/ShaderLibrary/Shadow/CustomShadows.hlsl"
 
 #define MAX_DIRECTION_LIGHT_COUNT 4
-#define MAX_OTHER_LIGHT_COUNT 64
+//#define MAX_OTHER_LIGHT_COUNT 64 使用了computerbuffer 不再需要再shader中定义
 
 //创建uniform值 在buffer中存储光照信息
 CBUFFER_START(_CustomLight)
     int _DirectionLightCount;
+    /*
     float4 _DirectionLightColors[MAX_DIRECTION_LIGHT_COUNT];
     float4 _DirectionLightDirsAndMasks[MAX_DIRECTION_LIGHT_COUNT];
+    float4 _DirectionShadowData[MAX_DIRECTION_LIGHT_COUNT];
+    */
 
     int _OtherLightCount;
+    /*
     float4 _OtherLightColors[MAX_OTHER_LIGHT_COUNT];
     float4 _OtherLightPosition[MAX_OTHER_LIGHT_COUNT];
     float4 _OtherLightDirectionsAndMasks[MAX_OTHER_LIGHT_COUNT];
     float4 _OtherLightSpotAngles[MAX_OTHER_LIGHT_COUNT];
-
-    float4 _DirectionShadowData[MAX_DIRECTION_LIGHT_COUNT];
     float4 _OtherShadowData[MAX_OTHER_LIGHT_COUNT];
+    */
+
 CBUFFER_END
+
+struct DirectionLightData
+{
+    float4 color;
+    float4 directionAndMask;
+    float4 shadowData;
+};
+
+struct OtherLightData
+{
+    float4 color;
+    float4 position;
+    float4 directionAndMask;
+    float4 spotAngle;
+    float4 shadowData;
+};
+
+StructuredBuffer<DirectionLightData> _DirectionLightData;
+StructuredBuffer<OtherLightData> _OtherLightData;
 
 //存放光源数据
 struct Light
@@ -46,23 +69,23 @@ bool RenderingLayersOverlap(Surface surface, Light light)
     return (surface.renderingLayerMask & light.renderingLayerMask) != 0;
 }
 
-DirectionalShadowDataSetting GetDirectionShadowDataSetting(int lightIndex, ShadowData shadowData)
+DirectionalShadowDataSetting GetDirectionShadowDataSetting(float4 lightShadowData, ShadowData shadowData)
 {
     DirectionalShadowDataSetting data;
-    data.strength = _DirectionShadowData[lightIndex].x * shadowData.strength; //多乘一个用来避免采样不存在的级联采样 同意设置为0
-    data.tileIndex = _DirectionShadowData[lightIndex].y + shadowData.cascadeIndex;
-    data.normalBias = _DirectionShadowData[lightIndex].z;
-    data.shadowMaskChannel = _DirectionShadowData[lightIndex].w;
+    data.strength = lightShadowData.x * shadowData.strength; //多乘一个用来避免采样不存在的级联采样 同意设置为0
+    data.tileIndex = lightShadowData.y + shadowData.cascadeIndex;
+    data.normalBias = lightShadowData.z;
+    data.shadowMaskChannel = lightShadowData.w;
     return data;
 }
 
-OtherShadowDataSetting GetOtherShadowDataSetting(int lightIndex)
+OtherShadowDataSetting GetOtherShadowDataSetting(float4 lightShadowData)
 {
     OtherShadowDataSetting otherShadowData;
-    otherShadowData.strength = _OtherShadowData[lightIndex].x;
-    otherShadowData.tileIndex = _OtherShadowData[lightIndex].y;
-    otherShadowData.shadowMaskChannel = _OtherShadowData[lightIndex].w;
-    otherShadowData.isPoint = _OtherShadowData[lightIndex].z == 1;
+    otherShadowData.strength = lightShadowData.x;
+    otherShadowData.tileIndex = lightShadowData.y;
+    otherShadowData.shadowMaskChannel = lightShadowData.w;
+    otherShadowData.isPoint = lightShadowData.z == 1;
     otherShadowData.lightPositionWS = 0; //在外面填充
     otherShadowData.lightDirectionWS = 0;
     otherShadowData.spotDirectionWS = 0;
@@ -71,12 +94,14 @@ OtherShadowDataSetting GetOtherShadowDataSetting(int lightIndex)
 
 Light GetDirectionLight(int index, Surface surface, ShadowData shadowData)
 {
+    DirectionLightData directionLightData = _DirectionLightData[index];
     Light light;
-    light.color = _DirectionLightColors[index].xyz;
-    light.direction = _DirectionLightDirsAndMasks[index].xyz;
-    light.renderingLayerMask = asuint(_DirectionLightDirsAndMasks[index].w);
+    light.color = directionLightData.color.xyz;
+    light.direction = directionLightData.directionAndMask.xyz;
+    light.renderingLayerMask = asuint(directionLightData.directionAndMask.w);
 
-    DirectionalShadowDataSetting dirShadowData = GetDirectionShadowDataSetting(index, shadowData);
+    DirectionalShadowDataSetting dirShadowData = GetDirectionShadowDataSetting(
+        directionLightData.shadowData, shadowData);
     light.attenuation = GetDirectionalShadowAttenuation(dirShadowData, shadowData, surface);
     //light.attenuation = shadowData.cascadeIndex * 0.25;
     //light.attenuation = 1;
@@ -85,21 +110,22 @@ Light GetDirectionLight(int index, Surface surface, ShadowData shadowData)
 
 Light GetOtherLight(int index, Surface surface, ShadowData shadowData)
 {
+    OtherLightData otherLightData = _OtherLightData[index];
     Light light;
-    light.color = _OtherLightColors[index].xyz;
-    float3 lightPosition = _OtherLightPosition[index].xyz;
+    light.color = otherLightData.color.xyz;
+    float3 lightPosition = otherLightData.position.xyz;
     float3 ray = lightPosition - surface.position;
     light.direction = normalize(ray);
     float distanceSqr = max(dot(ray, ray), 0.00001);
-    float rangeAttenuation = Square(saturate(1.0 - Square(distanceSqr * _OtherLightPosition[index].w)));
+    float rangeAttenuation = Square(saturate(1.0 - Square(distanceSqr * otherLightData.position.w)));
 
-    float4 spotAngles = _OtherLightSpotAngles[index];
-    float3 spotDirection = _OtherLightDirectionsAndMasks[index].xyz;
-    light.renderingLayerMask = asuint(_OtherLightDirectionsAndMasks[index].w);
+    //float4 spotAngles = otherLightData.spotAngle;
+    float3 spotDirection = otherLightData.directionAndMask.xyz;
+    light.renderingLayerMask = asuint(otherLightData.directionAndMask.w);
     float spotAttenuation = Square(saturate(dot(spotDirection, light.direction) *
-        spotAngles.x + spotAngles.y));
+        otherLightData.spotAngle.x + otherLightData.spotAngle.y));
 
-    OtherShadowDataSetting otherShadowData = GetOtherShadowDataSetting(index);
+    OtherShadowDataSetting otherShadowData = GetOtherShadowDataSetting(otherLightData.shadowData);
     otherShadowData.lightPositionWS = lightPosition;
     otherShadowData.lightDirectionWS = light.direction;
     otherShadowData.spotDirectionWS = spotDirection;

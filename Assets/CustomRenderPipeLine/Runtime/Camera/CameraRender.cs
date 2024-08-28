@@ -135,7 +135,7 @@ public class CameraRender
 
             //rendergraph的过程
             //光照设置
-            ShadowTextures shadowTextures = LightingPass.Recode(renderGraph, _cullingResults, shadowSettings,
+            LightResource lightResource = LightingPass.Recode(renderGraph, _cullingResults, shadowSettings,
                 useLightPerObject, cameraSettings.renderingLayerMask);
 
             //应在渲染常规几何体之前渲染阴影
@@ -149,7 +149,7 @@ public class CameraRender
             //绘制不透明物体
             GeometryPass.Recode(renderGraph, renderCamera, _cullingResults,
                 useLightPerObject, cameraSettings.renderingLayerMask, true,
-                cameraRendererTextures, shadowTextures);
+                cameraRendererTextures, lightResource);
 
             //绘制天空盒
             SkyBoxPass.Recode(renderGraph, renderCamera, cameraRendererTextures);
@@ -164,7 +164,7 @@ public class CameraRender
             //绘制透明物体
             GeometryPass.Recode(renderGraph, renderCamera, _cullingResults,
                 useLightPerObject, cameraSettings.renderingLayerMask, false,
-                cameraRendererTextures, shadowTextures);
+                cameraRendererTextures, lightResource);
 
             //绘制不受支持的Shader 
             UnSupportedShadersPass.Recode(renderGraph, renderCamera, _cullingResults);

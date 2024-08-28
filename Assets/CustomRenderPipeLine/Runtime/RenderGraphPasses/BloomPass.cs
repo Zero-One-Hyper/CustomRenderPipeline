@@ -14,9 +14,6 @@ public class BloomPass
 
     private static readonly int FxSource2ID = UnityEngine.Shader.PropertyToID("_PostFXSource2");
 
-    //转为TexureHandle后不再需要申请临时RT了
-    //private static readonly int BloomResultID = UnityEngine.Shader.PropertyToID("BloomResult");
-
     private static readonly int BloomBicubicUpsamplingID = UnityEngine.Shader.PropertyToID("_BloomBicubicUpsampling");
     private static readonly int BloomIntensityID = UnityEngine.Shader.PropertyToID("_BloomIntensity");
     private static readonly int BloomThresholdID = UnityEngine.Shader.PropertyToID("_BloomThreshold");

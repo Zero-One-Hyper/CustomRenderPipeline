@@ -29,8 +29,8 @@
 #define OTHER_FILTER_SETUP SampleShadow_ComputeSamples_Tent_7x7
 #endif
 
-#define MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT 4
-#define MAX_SHADOWED_OTHER_LIGHT_COUNT 16
+//#define MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT 4
+//#define MAX_SHADOWED_OTHER_LIGHT_COUNT 16
 //级联阴影
 #define MAX_SHADOW_CASCADE_COUNT 4
 
@@ -66,20 +66,37 @@ SAMPLER_CMP(SHADOW_SAMPLER);
 
 
 CBUFFER_START(_CustomShadows)
-    float4x4 _DirectionalShadowMatrices[MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT * MAX_SHADOW_CASCADE_COUNT];
-    float4x4 _OtherLightShadowMatrices[MAX_SHADOWED_OTHER_LIGHT_COUNT];
-
+    //float4x4 _DirectionalShadowMatrices[MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT * MAX_SHADOW_CASCADE_COUNT];
+    /*
     float4 _OtherShadowTiles[MAX_SHADOWED_OTHER_LIGHT_COUNT];
+    float4x4 _OtherLightShadowMatrices[MAX_SHADOWED_OTHER_LIGHT_COUNT];
+    */
 
     int _CascadeCount;
-    float4 _CascadeCullingSpheres[MAX_SHADOW_CASCADE_COUNT];
-    float4 _CascadeData[MAX_SHADOW_CASCADE_COUNT]; //包括偏移 纹素尺寸
+    //float4 _CascadeCullingSpheres[MAX_SHADOW_CASCADE_COUNT];
+    //float4 _CascadeData[MAX_SHADOW_CASCADE_COUNT]; //包括偏移 纹素尺寸
 
     //float _MaxShadowDistance;
     float4 _ShadowDistanceFade;
     float4 _ShadowAtlasSize; //图集尺寸
 
 CBUFFER_END
+
+struct DirectionShadowCascade
+{
+    float4 cullingSphere;
+    float4 cascadeData;
+};
+
+struct OtherShadowBufferData
+{
+    float4 tileData;
+    float4x4 shadowMatrix;
+};
+
+StructuredBuffer<DirectionShadowCascade> _DirectionShadowCascade;
+StructuredBuffer<float4x4> _DirectionalShadowMatrices;
+StructuredBuffer<OtherShadowBufferData> _OtherShadowData;
 
 //ShadowMask
 struct ShadowMask
@@ -97,6 +114,7 @@ struct ShadowData
     float strength;
     ShadowMask shadowMask;
 };
+
 
 static const float3 _PointShadowPlane[6] =
 {
@@ -125,16 +143,18 @@ ShadowData GetShadowData(Surface surfaceWS)
     int i = 0;
     for (i = 0; i < _CascadeCount; i++)
     {
-        float4 sphere = _CascadeCullingSpheres[i];
-        float distanceSqr = DistanceSquared(surfaceWS.position, sphere.xyz);
+        //float4 sphere = _CascadeCullingSpheres[i];
+        DirectionShadowCascade shadowCascade = _DirectionShadowCascade[i];
+        float distanceSqr = DistanceSquared(surfaceWS.position, shadowCascade.cullingSphere.xyz);
         //寻找到正好包含当前像素的裁剪球（记住级联阴影的索引是逐片元的）
-        if (distanceSqr < sphere.w)
+        if (distanceSqr < shadowCascade.cullingSphere.w)
         {
-            float fade = FadeShadowStrength(distanceSqr, _CascadeData[i].x, _ShadowDistanceFade.z);
+            float fade = FadeShadowStrength(distanceSqr, shadowCascade.cascadeData.x, _ShadowDistanceFade.z);
             if (i == _CascadeCount - 1)
             {
                 //如果使用级联阴影最后一级替换fade的话↓
-                data.strength *= FadeShadowStrength(distanceSqr, 1 / sphere.w, _ShadowDistanceFade.z);
+                data.strength *= FadeShadowStrength(distanceSqr, 1 / shadowCascade.cullingSphere.w,
+                                                    _ShadowDistanceFade.z);
                 //data.strength *= fade;
             }
             else
@@ -223,7 +243,8 @@ float GetCascadShadowAttenuation(DirectionalShadowDataSetting data, ShadowData s
     //当光源照射方向和平面存在夹角时 ，多个片元从同一个深度纹理采样，就会出现有的片源采样出来在上，有的在下 出现条状失真
     //以法线偏移的方式解决条状阴影暗斑           前面时是light的bias偏移， 后面是纹素的偏移
     //使用插值法线计算CascadeShadow
-    float3 normalBias = surfaceWS.interpolatedNormal * (data.normalBias * _CascadeData[shadowData.cascadeIndex].y);
+    float3 normalBias = surfaceWS.interpolatedNormal * (data.normalBias *
+        _DirectionShadowCascade[shadowData.cascadeIndex].cascadeData.y);
     float3 positionSTS = mul(_DirectionalShadowMatrices[data.tileIndex],
                              float4(surfaceWS.position + normalBias, 1)).xyz;
     //将surface经过一个变换矩阵T变换到光源的坐标空间中，对比shadowmap中的值(最近的物体的深度)与变换后坐标的z值 对比 就能知道当前像素是否在阴影中
@@ -232,7 +253,8 @@ float GetCascadShadowAttenuation(DirectionalShadowDataSetting data, ShadowData s
     if (shadowData.cascadeBlend < 1.0)
     {
         //若处于过度区域，就必须从下一级级联中采样
-        normalBias = surfaceWS.interpolatedNormal * (data.normalBias * _CascadeData[shadowData.cascadeIndex + 1].y);
+        normalBias = surfaceWS.interpolatedNormal * (data.normalBias *
+            _DirectionShadowCascade[shadowData.cascadeIndex + 1].cascadeData.y);
         positionSTS = mul(_DirectionalShadowMatrices[data.tileIndex + 1],
                           float4(surfaceWS.position + normalBias, 1)).xyz;
         shadow = lerp(FilterDirectionalShadow(positionSTS), shadow, shadowData.cascadeBlend); //线性混合
@@ -274,14 +296,15 @@ float GetOtherShadow(OtherShadowDataSetting otherShadowData, ShadowData globalSh
         tileIndex += faceOffset;
         lightPlane = _PointShadowPlane[faceOffset];
     }
-    float4 tileData = _OtherShadowTiles[tileIndex];
+    //float4 tileData = shadowBufferData.tileData;    
+    OtherShadowBufferData shadowBufferData = _OtherShadowData[tileIndex];
     float3 surfaceToLight = otherShadowData.lightPositionWS - surfaceWS.position;
     float distanceToLightPlane = dot(surfaceToLight, lightPlane);
-    float3 normalBias = surfaceWS.interpolatedNormal * (distanceToLightPlane * tileData.w);
-    float4 positionSTS = mul(_OtherLightShadowMatrices[tileIndex],
+    float3 normalBias = surfaceWS.interpolatedNormal * (distanceToLightPlane * shadowBufferData.tileData.w);
+    float4 positionSTS = mul(shadowBufferData.shadowMatrix,
                              float4(surfaceWS.position + normalBias, 1));
     //聚光灯是透视阴影，所以需将变换的xyz坐标除以w分量
-    return FilterOtherShadow(positionSTS.xyz / positionSTS.w, tileData.xyz);
+    return FilterOtherShadow(positionSTS.xyz / positionSTS.w, shadowBufferData.tileData.xyz);
 }
 
 float MixBakedAndRealtimeShadows(ShadowData shadowData, float realTimeShadow, int maskChannel,

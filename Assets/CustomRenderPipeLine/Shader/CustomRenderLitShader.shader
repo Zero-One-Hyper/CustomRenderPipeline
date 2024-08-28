@@ -85,7 +85,9 @@ Shader "Custom/CustomRenderPipeLine/LitShader"
 
             HLSLPROGRAM
             //着色器目标级别
-            #pragma target 3.5
+            //#pragma target 3.5
+            //使用了计算缓冲（ComputerBuffer) 现在再WebGl上不能使用了
+            #pragma target 4.5
 
             //为玻璃材质准备的漫反射预乘alpha
             #pragma shader_feature_fragment _ _PREMULTIPLYALPHA_ON
@@ -133,8 +135,9 @@ Shader "Custom/CustomRenderPipeLine/LitShader"
             ColorMask 0
 
             HLSLPROGRAM
-            #pragma target 3.5
-
+            //#pragma target 3.5
+            #pragma target 4.5
+            
             #pragma multi_compile _ _CASCADE_BLEND_DITHER
             #pragma multi_compile _ LOD_FADE_CROSSFADE
 
@@ -157,7 +160,8 @@ Shader "Custom/CustomRenderPipeLine/LitShader"
             Cull Off
 
             HLSLPROGRAM
-            #pragma target 3.5
+            //#pragma target 3.5
+            #pragma target 4.5
             #pragma vertex MetaVert
             #pragma fragment MetaFrag
             #include "Assets/CustomRenderPipeLine/Shader/CustomRenderMetaPass.hlsl"
