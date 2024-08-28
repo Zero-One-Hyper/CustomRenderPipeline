@@ -88,13 +88,13 @@ public class PostFXPass
 
         using RenderGraphBuilder builder =
             renderGraph.AddRenderPass(_finalFXSampler.name, out PostFXPass postFXPass, _finalFXSampler);
-        
+
         postFXPass._postFXStack = postFXStack;
         postFXPass._keepAlpha = keepAlpha;
         postFXPass._colorSource = builder.ReadTexture(colorSource);
-        
+
         builder.ReadTexture(colorLUT);
-        
+
         if (postFXStack.BufferSize.x == postFXStack.Camera.pixelWidth)
         {
             postFXPass._scaleMode = ScaleMode.None;
@@ -138,6 +138,9 @@ public class PostFXPass
     void ConfigureFXAA(CommandBuffer buffer)
     {
         CameraBufferSettings.FXAA fxaa = _postFXStack.CameraBufferSettings.fxaa;
+
+        buffer.SetKeyword(_fxaaAlphaContantsLumaKeyword, _keepAlpha);
+
         buffer.SetKeyword(_fxaaQualityLowKeyword, fxaa.quality ==
                                                   CameraBufferSettings.FXAA.Quality.Low);
         buffer.SetKeyword(_fxaaQualityMediumKeyword, fxaa.quality ==

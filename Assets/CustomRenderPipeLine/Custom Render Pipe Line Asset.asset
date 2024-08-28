@@ -23,7 +23,7 @@ MonoBehaviour:
     renderScale: 1
     bicubicRescaling: 2
     fxaa:
-      enable: 1
+      enable: 0
       quality: 2
       fixedThreshold: 0.0833
       relativeThreshold: 0.166
