@@ -125,6 +125,7 @@ public class BloomPass
                     ? DefaultFormat.HDR
                     : DefaultFormat.LDR),
             name = "Bloom Prefilter",
+            wrapMode = TextureWrapMode.Clamp, //放置bloom时边缘泄露
         };
         //填充TextureHandle
         TextureHandle[] pyramid = bloomPass._pyramid;

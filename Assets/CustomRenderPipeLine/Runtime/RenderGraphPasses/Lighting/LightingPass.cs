@@ -1,6 +1,5 @@
 using UnityEngine;
 using Unity.Collections;
-using Unity.VisualScripting;
 using UnityEngine.Experimental.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 
@@ -16,41 +15,16 @@ public partial class LightingPass
     private static int _directionLightCountID = UnityEngine.Shader.PropertyToID("_DirectionLightCount");
     private static int _directionLightDataID = UnityEngine.Shader.PropertyToID("_DirectionLightData");
 
-    /*
-    private static int _directionLightColorsID = UnityEngine.Shader.PropertyToID("_DirectionLightColors");
-    private static int _directionLightDirsAndMasksID = UnityEngine.Shader.PropertyToID("_DirectionLightDirsAndMasks");
-    private static int _directionShadowDataID = UnityEngine.Shader.PropertyToID("_DirectionShadowData");
-    */
-
     private static int _otherLightCountID = UnityEngine.Shader.PropertyToID("_OtherLightCount");
     private static int _otherLightDataID = UnityEngine.Shader.PropertyToID("_OtherLightData");
 
-    /*
-    private static int _otherLightColorsID = UnityEngine.Shader.PropertyToID("_OtherLightColors");
-    private static int _otherLightPositionID = UnityEngine.Shader.PropertyToID("_OtherLightPosition");
-    private static int _otherLightDirectionsAndMasksID =
-        UnityEngine.Shader.PropertyToID("_OtherLightDirectionsAndMasks");
-    private static int _otherLightSpotAnglesID = UnityEngine.Shader.PropertyToID("_OtherLightSpotAngles");
-    private static int _otherShadowDataID = UnityEngine.Shader.PropertyToID("_OtherShadowData");
-    */
-
+    //平行光设置
     private static readonly DirectionalLightData[] DirectionalLightDatas =
         new DirectionalLightData[MaxDirectionLightCount];
-    /*
-    private static Vector4[] _directionLightColors = new Vector4[MaxDirectionLightCount];
-    private static Vector4[] _directionLightDirsAndMasks = new Vector4[MaxDirectionLightCount];
-    private static Vector4[] _directionShadowData = new Vector4[MaxDirectionLightCount];
-    */
 
+    //其他光设置
     private static readonly OtherLightData[] OtherLightDatas = new OtherLightData[MaxOtherLightCount];
 
-    /*以结构体替代
-    private static Vector4[] _otherLightColors = new Vector4[MaxOtherLightCount];
-    private static Vector4[] _otherLightPosition = new Vector4[MaxOtherLightCount];
-    private static Vector4[] _otherLightDirectionsAndMasks = new Vector4[MaxOtherLightCount];
-    private static Vector4[] _otherLightSpotAngles = new Vector4[MaxOtherLightCount];
-    private static Vector4[] _otherShadowData = new Vector4[MaxOtherLightCount];
-    */
     private static GlobalKeyword _lightsPerObjectKeyword = GlobalKeyword.Create("_LIGHTS_PER_OBJECT");
 
     //由于阴影渲染的延迟，我们需要跟踪这些变量
@@ -102,34 +76,17 @@ public partial class LightingPass
         _lightBuffer = context.cmd;
         //在setup中做相关配置，在render中设置关键字
         _lightBuffer.SetKeyword(_lightsPerObjectKeyword, _useLightsPerObject);
-
+        //平行光
         _lightBuffer.SetGlobalInt(_directionLightCountID, _dirLightsCount);
         _lightBuffer.SetBufferData(_directionLightDataBuffer, DirectionalLightDatas,
             0, 0, _dirLightsCount);
         _lightBuffer.SetGlobalBuffer(_directionLightDataID, _directionLightDataBuffer);
-        /*
-        if (_dirLightsCount > 0)
-        {
-            _lightBuffer.SetGlobalVectorArray(_directionLightDirsAndMasksID, _directionLightDirsAndMasks);
-            _lightBuffer.SetGlobalVectorArray(_directionLightColorsID, _directionLightColors);
-            _lightBuffer.SetGlobalVectorArray(_directionShadowDataID, _directionShadowData);
-        }
-        */
-
+        //其他光
         _lightBuffer.SetGlobalInt(_otherLightCountID, _otherLightsCount);
         _lightBuffer.SetBufferData(_otherLightDataBuffer, OtherLightDatas,
             0, 0, _otherLightsCount);
         _lightBuffer.SetGlobalBuffer(_otherLightDataID, _otherLightDataBuffer);
-        /*
-        if (_otherLightsCount > 0)
-        {
-            _lightBuffer.SetGlobalVectorArray(_otherLightColorsID, _otherLightColors);
-            _lightBuffer.SetGlobalVectorArray(_otherLightPositionID, _otherLightPosition);
-            _lightBuffer.SetGlobalVectorArray(_otherLightDirectionsAndMasksID, _otherLightDirectionsAndMasks);
-            _lightBuffer.SetGlobalVectorArray(_otherLightSpotAnglesID, _otherLightSpotAngles);
-            _lightBuffer.SetGlobalVectorArray(_otherShadowDataID, _otherShadowData);
-        }
-        */
+
         //最后在light渲染结束使渲染shadow
         _shadows.Render(context);
         context.renderContext.ExecuteCommandBuffer(_lightBuffer);
@@ -171,7 +128,6 @@ public partial class LightingPass
                         {
                             DirectionalLightDatas[_dirLightsCount] = new DirectionalLightData(
                                 light, _shadows.ReserveDirectionalShadows(light, i), ref visibleLight);
-                            //SetDirectionLight(_dirLightsCount, i, light, ref visibleLight);
                             _dirLightsCount++;
                         }
 
@@ -225,16 +181,4 @@ public partial class LightingPass
     {
         return _shadows.GetResources(renderGraph, builder);
     }
-
-    /*
-    private void SetDirectionLight(int index, int visibleIndex, Light light, ref VisibleLight visibleLight)
-    {
-        //这里暂时没有给到一个主光源，后面需要添加
-        _directionLightColors[index] = visibleLight.finalColor;
-        Vector4 dirAndMask = -visibleLight.localToWorldMatrix.GetColumn(2);
-        dirAndMask.w = light.renderingLayerMask.ReinterpretAsFloat();
-        _directionLightDirsAndMasks[index] = dirAndMask;
-        _directionShadowData[index] = _shadows.ReserveDirectionalShadows(light, visibleIndex);
-    }
-    */
 }

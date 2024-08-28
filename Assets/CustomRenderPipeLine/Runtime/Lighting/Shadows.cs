@@ -39,30 +39,18 @@ public partial class Shadows
 
     //用于技术已经预留的光源数量
     private int _shadowDirectionalLightCount = 0;
-
     private int _shadowOtherLightCount = 0;
 
     private static int _dirShadowAtlasID = UnityEngine.Shader.PropertyToID("_DirectionalShadowAtlas");
-
     private static int _dirShadowMatricesID = UnityEngine.Shader.PropertyToID("_DirectionalShadowMatrices");
-
     private static int _otherShadowAtlasID = UnityEngine.Shader.PropertyToID("_OtherLightShadowAtlas");
-
     private static int _otherShadowDataID = UnityEngine.Shader.PropertyToID("_OtherShadowData");
-    /*
-    //使用到了级联阴影，所以每个变换矩阵都要乘4倍大小
-    private static int _otherShadowMatricesID = UnityEngine.Shader.PropertyToID("_OtherLightShadowMatrices");
-    private static int _otherShadowTilesID = UnityEngine.Shader.PropertyToID("_OtherShadowTiles");
-    */
-
+   
     //用于级联阴影球形剔除 其中directionShadowCascade中的CascadeData用于消除不正确的条纹状阴影暗斑
     private static int _directionShadowCascadeID =
         UnityEngine.Shader.PropertyToID("_DirectionShadowCascade");
 
     private static int _cascadeCountID = UnityEngine.Shader.PropertyToID("_CascadeCount");
-    //private static int _cascadeCullingSpheresId = UnityEngine.Shader.PropertyToID("_CascadeCullingSpheres");
-    //private static int _cascadeDataID = UnityEngine.Shader.PropertyToID("_CascadeData");
-
 
     //使用计算好的淡化距离替换最大距离
     private static int _shadowDistanceFadeID = UnityEngine.Shader.PropertyToID("_ShadowDistanceFade");
@@ -72,17 +60,12 @@ public partial class Shadows
     //过滤器越大需要贴图的采样次数越多 因此需要知道图集尺寸和纹素尺寸
     private static int _shadowAtlasSizeID = UnityEngine.Shader.PropertyToID("_ShadowAtlasSize");
 
-
-    //private static Vector4[] _cascadeCullingSpheres = new Vector4[MaxCascades];
-    //private static Vector4[] _cascadeData = new Vector4[MaxCascades];
-
     private static DirectionShadowCascade[] _directionShadowCascades =
         new DirectionShadowCascade[MaxCascades];
 
+    //使用到了级联阴影，所以每个变换矩阵都要乘4倍大小
     private static Matrix4x4[] _dirShadowMatrices = new Matrix4x4[MaxShadowsDirectionLightCount * MaxCascades];
 
-    //private static Vector4[] _otherShadowTiles = new Vector4[MaxShadowsOtherLightCount];
-    //private static Matrix4x4[] _otherShadowMatrices = new Matrix4x4[MaxShadowsOtherLightCount];
     private static readonly OtherShadowData[] OtherShadowDatas = new OtherShadowData[MaxShadowsOtherLightCount];
 
 
@@ -255,17 +238,12 @@ public partial class Shadows
             DoRenderDirectionalShadows(i, split, tileSize);
         }
 
-        //消除条状阴影暗斑
-        //_shadowBuffer.SetGlobalVectorArray(_cascadeCullingSpheresId, _cascadeCullingSpheres);
-        //_shadowBuffer.SetGlobalVectorArray(_cascadeDataID, _cascadeData);
-
         //设置级联参数 参数中的cascade data 用于消除条状阴影暗斑
         _shadowBuffer.SetBufferData(_directionShadowCascadesBuffer, _directionShadowCascades,
             0, 0, _shadowSettings.directionalLight.cascadeCount);
         _shadowBuffer.SetGlobalBuffer(_directionShadowCascadeID, _directionShadowCascadesBuffer);
 
         //渲染完所有有阴影的光源
-        //_shadowBuffer.SetGlobalMatrixArray(_dirShadowMatricesID, _dirShadowMatrices);
         _shadowBuffer.SetBufferData(_directionShadowMatricesBuffer, _dirShadowMatrices,
             0, 0,
             _shadowDirectionalLightCount * _shadowSettings.directionalLight.cascadeCount);
@@ -314,8 +292,6 @@ public partial class Shadows
         }
 
         //渲染完所有有阴影的光源
-        //_shadowBuffer.SetGlobalMatrixArray(_otherShadowMatricesID, _otherShadowMatrices);
-        //_shadowBuffer.SetGlobalVectorArray(_otherShadowTilesID, _otherShadowTiles);
         _shadowBuffer.SetBufferData(_otherShadowDataBuffer, OtherShadowDatas,
             0, 0, _shadowOtherLightCount);
         _shadowBuffer.SetGlobalBuffer(_otherShadowDataID, _otherShadowDataBuffer);
@@ -364,8 +340,6 @@ public partial class Shadows
             {
                 //这个cullingSphere是从摄像机出发计算的
                 //每个光源的级联都是等价的  只用做一次
-                //Vector4 cullingSphere = shadowSplitData.cullingSphere;
-                //SetCascadeData(i, cullingSphere, tileSize);
                 _directionShadowCascades[i] = new DirectionShadowCascade(
                     shadowSplitData.cullingSphere, tileSize,
                     _shadowSettings.directionalLight.filter);
@@ -416,8 +390,6 @@ public partial class Shadows
         Vector2 offset = SetTileViewport(lightIndex, split, tileSize);
         float tileScale = 1.0f / split;
 
-        //SetOtherShadowTileData(lightIndex, offset, tileScale, bias);
-        //_otherShadowMatrices[lightIndex] = ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileScale);
         OtherShadowDatas[lightIndex] = new OtherShadowData(offset, tileScale, bias,
             _shadowAtlasSize.w * 0.5f, ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileScale));
 
@@ -456,8 +428,6 @@ public partial class Shadows
             int tileIndex = lightIndex + i;
             Vector2 offset = SetTileViewport(tileIndex, split, tileSize);
 
-            //SetOtherShadowTileData(tileIndex, offset, tileScale, bias);
-            //_otherShadowMatrices[tileIndex] = ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileScale);
             OtherShadowDatas[tileIndex] = new OtherShadowData(offset, tileScale, bias,
                 _shadowAtlasSize.w * 0.5f, ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileScale));
 
@@ -599,36 +569,4 @@ public partial class Shadows
             _shadowBuffer.SetKeyword(keyWords[i], i == enableIndex);
         }
     }
-
-    /*
-    private void SetCascadeData(int index, Vector4 cullingSphere, float tileSize)
-    {
-        //把求级联阴影倒数部分放到C#来做
-        //_cascadeData[index].x = 1.0f / cullingSphere.w;
-        //只考虑单个维度的话，沿表面法相偏移进行阴影采样 只需偏移世界空间下纹素大小
-        float texelSize = 2.0f * cullingSphere.w / tileSize *
-                          ((float)_shadowSettings.directionalLight.filter + 1.0f) * //使用PCF的过滤等级自动调整偏移
-                          1.4142136f; //纹素时正方形，最坏情况下需要考虑斜边（需要最大）
-        //先在C#中计算平方 （本来需要在在着色器中计算表面与球心距离的平方及半径的平方）
-        cullingSphere.w -= texelSize;
-        cullingSphere.w *= cullingSphere.w;
-        _cascadeCullingSpheres[index] = cullingSphere;
-        _cascadeData[index] = new Vector4(
-            1.0f / cullingSphere.w, texelSize);
-    }
-    */
-
-    /*
-    private void SetOtherShadowTileData(int index, Vector2 offset, float scale, float bias)
-    {
-        //保证钳位采样
-        float border = _shadowAtlasSize.w * 0.5f;
-        Vector4 data;
-        data.x = offset.x * scale + border;
-        data.y = offset.y * scale + border;
-        data.z = scale - border - border;
-        data.w = bias;
-        _otherShadowTiles[index] = data;
-    }
-    */
 }

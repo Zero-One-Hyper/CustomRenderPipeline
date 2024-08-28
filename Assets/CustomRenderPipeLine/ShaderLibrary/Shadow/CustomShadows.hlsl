@@ -29,8 +29,6 @@
 #define OTHER_FILTER_SETUP SampleShadow_ComputeSamples_Tent_7x7
 #endif
 
-//#define MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT 4
-//#define MAX_SHADOWED_OTHER_LIGHT_COUNT 16
 //级联阴影
 #define MAX_SHADOW_CASCADE_COUNT 4
 
@@ -66,17 +64,7 @@ SAMPLER_CMP(SHADOW_SAMPLER);
 
 
 CBUFFER_START(_CustomShadows)
-    //float4x4 _DirectionalShadowMatrices[MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT * MAX_SHADOW_CASCADE_COUNT];
-    /*
-    float4 _OtherShadowTiles[MAX_SHADOWED_OTHER_LIGHT_COUNT];
-    float4x4 _OtherLightShadowMatrices[MAX_SHADOWED_OTHER_LIGHT_COUNT];
-    */
-
     int _CascadeCount;
-    //float4 _CascadeCullingSpheres[MAX_SHADOW_CASCADE_COUNT];
-    //float4 _CascadeData[MAX_SHADOW_CASCADE_COUNT]; //包括偏移 纹素尺寸
-
-    //float _MaxShadowDistance;
     float4 _ShadowDistanceFade;
     float4 _ShadowAtlasSize; //图集尺寸
 
@@ -143,7 +131,6 @@ ShadowData GetShadowData(Surface surfaceWS)
     int i = 0;
     for (i = 0; i < _CascadeCount; i++)
     {
-        //float4 sphere = _CascadeCullingSpheres[i];
         DirectionShadowCascade shadowCascade = _DirectionShadowCascade[i];
         float distanceSqr = DistanceSquared(surfaceWS.position, shadowCascade.cullingSphere.xyz);
         //寻找到正好包含当前像素的裁剪球（记住级联阴影的索引是逐片元的）

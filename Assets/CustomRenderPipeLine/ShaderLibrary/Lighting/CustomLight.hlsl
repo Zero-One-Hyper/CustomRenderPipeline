@@ -9,20 +9,7 @@
 //创建uniform值 在buffer中存储光照信息
 CBUFFER_START(_CustomLight)
     int _DirectionLightCount;
-    /*
-    float4 _DirectionLightColors[MAX_DIRECTION_LIGHT_COUNT];
-    float4 _DirectionLightDirsAndMasks[MAX_DIRECTION_LIGHT_COUNT];
-    float4 _DirectionShadowData[MAX_DIRECTION_LIGHT_COUNT];
-    */
-
     int _OtherLightCount;
-    /*
-    float4 _OtherLightColors[MAX_OTHER_LIGHT_COUNT];
-    float4 _OtherLightPosition[MAX_OTHER_LIGHT_COUNT];
-    float4 _OtherLightDirectionsAndMasks[MAX_OTHER_LIGHT_COUNT];
-    float4 _OtherLightSpotAngles[MAX_OTHER_LIGHT_COUNT];
-    float4 _OtherShadowData[MAX_OTHER_LIGHT_COUNT];
-    */
 
 CBUFFER_END
 
