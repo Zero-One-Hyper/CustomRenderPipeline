@@ -45,6 +45,7 @@ SAMPLER(sampler_linear_clamp);
 SAMPLER(sampler_point_clamp);
 
 #include "Assets/CustomRenderPipeLine/ShaderLibrary/Fragment.hlsl"
+#include "Assets/CustomRenderPipeLine/ShaderLibrary/Forward+/ForwardPlus.hlsl"
 
 void ClipLod(Fragment fragment, float fade)
 {

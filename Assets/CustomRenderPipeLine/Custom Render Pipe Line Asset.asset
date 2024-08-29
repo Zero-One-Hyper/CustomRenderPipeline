@@ -12,6 +12,41 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 938df166229202249b6db83339818982, type: 3}
   m_Name: Custom Render Pipe Line Asset
   m_EditorClassIdentifier: 
+  _setting:
+    cameraBufferSettings:
+      allowHDR: 1
+      copyColor: 1
+      copyColorReflections: 0
+      copyDepth: 1
+      copyDepthReflections: 0
+      renderScale: 1
+      bicubicRescaling: 2
+      fxaa:
+        enable: 1
+        quality: 2
+        fixedThreshold: 0.0833
+        relativeThreshold: 0.166
+        subpixelBlending: 0.754
+    useSRPBatcher: 1
+    useLightPerObject: 1
+    shadowSettings:
+      maxDistance: 1000
+      shadowDistanceFade: 0.527
+      directionalLight:
+        atlasSize: 4096
+        filter: 2
+        cascadeCount: 4
+        cascadeRatio1: 0.1
+        cascadeRatio2: 0.25
+        cascadeRatio3: 0.5
+        cascadeFade: 0.1
+        cascadeBlend: 1
+      otherLight:
+        atlasSize: 2048
+        filterMode: 2
+    postFXSettings: {fileID: 11400000, guid: 8b4b7c52e72967542b905636f14a9d54, type: 2}
+    colorLutResolution: 32
+    cameraRenderShader: {fileID: 4800000, guid: c946b8ef36f349e4aa9df8f47911ccfd, type: 3}
   _useSRPBacher: 1
   useLightsPerObject: 1
   cameraBufferSettings:

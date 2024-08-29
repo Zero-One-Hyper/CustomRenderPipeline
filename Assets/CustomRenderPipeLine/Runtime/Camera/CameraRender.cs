@@ -25,13 +25,15 @@ public class CameraRender
     private PostFXStack _postFXStack = new PostFXStack();
     private Material _cameraRendererMaterial;
 
-
     public void Render(RenderGraph renderGraph, ScriptableRenderContext context, Camera renderCamera,
-        bool useLightPerObject, CameraBufferSettings cameraBufferSettings, ShadowSettings shadowSettings,
-        PostFXSettings postFXSettings, int colorLUTResolution)
+        CustomRenderPipelineSetting setting)
     {
         this._context = context;
         this._camera = renderCamera;
+        CameraBufferSettings cameraBufferSettings = setting.cameraBufferSettings;
+        PostFXSettings postFXSettings = setting.postFXSettings;
+        ShadowSettings shadowSettings = setting.shadowSettings;
+        bool useLightPerObject = setting.useLightPerObject;
 
         ProfilingSampler cameraSampler;
         CameraSettings cameraSettings;
@@ -136,7 +138,7 @@ public class CameraRender
             //rendergraph的过程
             //光照设置
             LightResource lightResource = LightingPass.Recode(renderGraph, _cullingResults, shadowSettings,
-                useLightPerObject, cameraSettings.renderingLayerMask);
+                useLightPerObject, cameraSettings.renderingLayerMask, bufferSize);
 
             //应在渲染常规几何体之前渲染阴影
             //设置摄像机参数
@@ -177,7 +179,7 @@ public class CameraRender
                 _postFXStack.FinalBlendMode = cameraSettings.finalBlendMode;
                 _postFXStack.PostFXSettings = postFXSettings;
                 PostFXPass.Record(renderGraph, _postFXStack,
-                    colorLUTResolution, cameraSettings.keepAlpha,
+                    (int)setting.colorLutResolution, cameraSettings.keepAlpha,
                     cameraRendererTextures);
             }
             else if (useIntermediateBuffer)

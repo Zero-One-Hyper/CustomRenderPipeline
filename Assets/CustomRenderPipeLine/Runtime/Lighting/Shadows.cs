@@ -45,7 +45,7 @@ public partial class Shadows
     private static int _dirShadowMatricesID = UnityEngine.Shader.PropertyToID("_DirectionalShadowMatrices");
     private static int _otherShadowAtlasID = UnityEngine.Shader.PropertyToID("_OtherLightShadowAtlas");
     private static int _otherShadowDataID = UnityEngine.Shader.PropertyToID("_OtherShadowData");
-   
+
     //用于级联阴影球形剔除 其中directionShadowCascade中的CascadeData用于消除不正确的条纹状阴影暗斑
     private static int _directionShadowCascadeID =
         UnityEngine.Shader.PropertyToID("_DirectionShadowCascade");
@@ -134,6 +134,13 @@ public partial class Shadows
         {
             RenderOtherShadows();
         }
+
+
+        //转移了 在render时才设置buffer
+        _shadowBuffer.SetGlobalBuffer(_directionShadowCascadeID, _directionShadowCascadesBuffer);
+        _shadowBuffer.SetGlobalBuffer(_dirShadowMatricesID, _directionShadowMatricesBuffer);
+        _shadowBuffer.SetGlobalBuffer(_otherShadowDataID, _otherShadowDataBuffer);
+
 
         _shadowBuffer.SetGlobalTexture(_dirShadowAtlasID, _directionalShadowAtlas);
         _shadowBuffer.SetGlobalTexture(_otherShadowAtlasID, _otherShadowAtlas);
@@ -241,13 +248,13 @@ public partial class Shadows
         //设置级联参数 参数中的cascade data 用于消除条状阴影暗斑
         _shadowBuffer.SetBufferData(_directionShadowCascadesBuffer, _directionShadowCascades,
             0, 0, _shadowSettings.directionalLight.cascadeCount);
-        _shadowBuffer.SetGlobalBuffer(_directionShadowCascadeID, _directionShadowCascadesBuffer);
+        //_shadowBuffer.SetGlobalBuffer(_directionShadowCascadeID, _directionShadowCascadesBuffer);
 
         //渲染完所有有阴影的光源
         _shadowBuffer.SetBufferData(_directionShadowMatricesBuffer, _dirShadowMatrices,
             0, 0,
             _shadowDirectionalLightCount * _shadowSettings.directionalLight.cascadeCount);
-        _shadowBuffer.SetGlobalBuffer(_dirShadowMatricesID, _directionShadowMatricesBuffer);
+        //_shadowBuffer.SetGlobalBuffer(_dirShadowMatricesID, _directionShadowMatricesBuffer);
 
         //过滤模式keywords只有3个
         SetShadowKeyWorlds(_directionalLightFilterKeyWords, (int)_shadowSettings.directionalLight.filter - 1);
@@ -294,7 +301,7 @@ public partial class Shadows
         //渲染完所有有阴影的光源
         _shadowBuffer.SetBufferData(_otherShadowDataBuffer, OtherShadowDatas,
             0, 0, _shadowOtherLightCount);
-        _shadowBuffer.SetGlobalBuffer(_otherShadowDataID, _otherShadowDataBuffer);
+        //_shadowBuffer.SetGlobalBuffer(_otherShadowDataID, _otherShadowDataBuffer);
 
         //过滤模式keyworlds只有3个
         SetShadowKeyWorlds(_otherLightFilterKeyWords, (int)_shadowSettings.otherLight.filterMode - 1);

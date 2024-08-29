@@ -111,7 +111,7 @@ half4 LitFrag(LitVaryings input) : SV_Target
     */
     GI gi = GetGI(GI_FRAGMENT_DATA(input), surface, brdf);
     //所有平行光
-    res.rgb = GetAllLighting(surface, brdf, gi);
+    res.rgb = GetAllLighting(inputConfig.fragment, surface, brdf, gi);
     res.rgb += GetEmission(input.uv);
     res.a = GetFinalAlpha(surface.alpha);
     return res;

@@ -23,7 +23,7 @@ Light GetDirectionMainLight(Surface surface, GI gi)
     return GetDirectionLight(0, surface, shadowData);
 }
 
-float3 GetAllLighting(Surface surface, BRDF brdf, GI gi)
+float3 GetAllLighting(Fragment fragment, Surface surface, BRDF brdf, GI gi)
 {
     ShadowData shadowData = GetShadowData(surface);
     shadowData.shadowMask = gi.shadowMask;
@@ -50,9 +50,12 @@ float3 GetAllLighting(Surface surface, BRDF brdf, GI gi)
         }
     }
     #else
-    for (int j = 0; j < GetOtherLightCount(); j++)
+    ForwardPlueTile tile = GetForwardPlusTile(fragment.screenUV);
+    int lastLightIndex = tile.GetLastLightIndexInTile();
+    //for (int j = 0; j < GetOtherLightCount(); j++)
+    for (int j = tile.GetFirstLightIndexInTile(); j <= lastLightIndex; j++)
     {
-        Light light = GetOtherLight(j, surface, shadowData);
+        Light light = GetOtherLight(tile.GetLightIndex(j), surface, shadowData);
         if (RenderingLayersOverlap(surface, light))
         {
             color += GetLighting(surface, brdf, light);

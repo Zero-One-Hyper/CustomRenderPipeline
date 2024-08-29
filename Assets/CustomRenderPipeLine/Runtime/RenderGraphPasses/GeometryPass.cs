@@ -84,6 +84,11 @@ public class GeometryPass
 
         builder.ReadComputeBuffer(lightResource.directionLightDataBuffer);
         builder.ReadComputeBuffer(lightResource.otherLightDataBuffer);
+        if (lightResource.tilesBuffer.IsValid())
+        {
+            builder.ReadComputeBuffer(lightResource.tilesBuffer);
+        }
+
         //获取阴影贴图 这里就是只要配置了才会使用(不错的资源管理方式)
         builder.ReadTexture(lightResource.shadowResource.directionalAtlas);
         builder.ReadTexture(lightResource.shadowResource.otherAtlas);
