@@ -28,7 +28,7 @@ MonoBehaviour:
         relativeThreshold: 0.166
         subpixelBlending: 0.754
     useSRPBatcher: 1
-    useLightPerObject: 1
+    useLightPerObject: 0
     shadowSettings:
       maxDistance: 1000
       shadowDistanceFade: 0.527
@@ -47,6 +47,7 @@ MonoBehaviour:
     postFXSettings: {fileID: 11400000, guid: 8b4b7c52e72967542b905636f14a9d54, type: 2}
     colorLutResolution: 32
     cameraRenderShader: {fileID: 4800000, guid: c946b8ef36f349e4aa9df8f47911ccfd, type: 3}
+    cameraDebugShader: {fileID: 4800000, guid: 3c522e4f3f326ac499b80ea4f431e41a, type: 3}
   _useSRPBacher: 1
   useLightsPerObject: 1
   cameraBufferSettings:

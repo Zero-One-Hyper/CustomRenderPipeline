@@ -42,6 +42,22 @@ struct ForwardPlueTile
     {
         return _ForwardPlusTiles[lightIndexInTile];
     }
+
+    bool IsMinimumEdgePixel(float2 screenUV)
+    {
+        float2 startUV = coordinates / _ForwardPlusTileSettings.xy;
+        return any(screenUV - startUV < _CameraBufferSize.xy);
+    }
+
+    int GetMaxLightPerTile()
+    {
+        return GetTileDataSize() - 1;
+    }
+
+    int2 GetScreenSize()
+    {
+        return int2(round(_CameraBufferSize.zw / _ForwardPlusTileSettings.xy));
+    }
 };
 
 ForwardPlueTile GetForwardPlusTile(float2 screenUV)

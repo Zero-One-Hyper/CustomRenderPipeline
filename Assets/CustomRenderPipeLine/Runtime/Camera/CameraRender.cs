@@ -6,9 +6,10 @@ using UnityEngine.Experimental.Rendering.RenderGraphModule;
 //目的为了将摄像机能看到的东西画出来
 public class CameraRender
 {
-    public CameraRender(UnityEngine.Shader shader)
+    public CameraRender(UnityEngine.Shader shader, UnityEngine.Shader debugShader)
     {
         _cameraRendererMaterial = CoreUtils.CreateEngineMaterial(shader);
+        CameraDebugger.Initialize(debugShader);
     }
 
     public const float RenderScaleMin = 0.01f;
@@ -115,7 +116,8 @@ public class CameraRender
         cameraBufferSettings.fxaa.enable &= cameraSettings.allowFXAA;
         //将是否使用中间纹理挪到setup外面来
         bool useIntermediateBuffer = useRenderScaledRendering || useColorTexture ||
-                                     useDepthTexture || hasActivePostFX;
+                                     useDepthTexture || hasActivePostFX ||
+                                     !useLightPerObject;
 
 
         var renderGraphParameters = new RenderGraphParameters()
@@ -187,6 +189,7 @@ public class CameraRender
                 FinalPass.Record(renderGraph, copier, cameraRendererTextures);
             }
 
+            DebugPass.Recode(renderGraph, setting, renderCamera, lightResource);
             //绘制gizmos后绘制后处理
             //后处理后绘制Gizmos(绘制gizmos的地方换到了RenderGraphy)
             GizmosPass.Record(renderGraph, copier, cameraRendererTextures, useIntermediateBuffer);
@@ -201,5 +204,6 @@ public class CameraRender
     public void Dispose()
     {
         CoreUtils.Destroy(_cameraRendererMaterial);
+        CameraDebugger.CleanUp();
     }
 }

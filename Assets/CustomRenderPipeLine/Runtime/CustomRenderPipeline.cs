@@ -21,7 +21,7 @@ public partial class CustomRenderPipeline : RenderPipeline
         //this._shadowSettings = shadowSettings;
         //this._postFXSettings = postFXSettings;
         InitializeForEditor();
-        _renderer = new CameraRender(_setting.cameraRenderShader);
+        _renderer = new CameraRender(_setting.cameraRenderShader, _setting.cameraDebugShader);
     }
 
     private CameraRender _renderer;
