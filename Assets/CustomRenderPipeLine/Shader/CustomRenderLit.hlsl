@@ -66,7 +66,7 @@ half4 LitFrag(LitVaryings input) : SV_Target
 {
     UNITY_SETUP_INSTANCE_ID(input);
     //在AlphaClip前进行LOD的混合
-    InputConfig inputConfig = GetInputConfig(input.uv);
+    InputConfig inputConfig = GetInputConfig(input.uv, input.positionCS);
     ClipLod(inputConfig.fragment, unity_LODFade.x);
 
     half4 detailTex = GetDetail(input.detailUV);

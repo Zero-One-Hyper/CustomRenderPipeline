@@ -8,7 +8,7 @@ float _DebugOpacity;
 struct Varyings
 {
     float4 positionCS : SV_POSITION;
-    float2 screenUV : TEXCOORD0;
+    float2 screenUV : VAR_SCREEN_UV;
 };
 
 Varyings DefaultPassVert(uint vertexID : SV_VertexID)
@@ -32,7 +32,7 @@ Varyings DefaultPassVert(uint vertexID : SV_VertexID)
 
 float4 ForwardPlusTilesPassFragment(Varyings input) : SV_TARGET
 {
-    ForwardPlueTile tile = GetForwardPlusTile(input.screenUV);
+    ForwardPlusTile tile = GetForwardPlusTile(input.screenUV);
     float3 color;
     if (tile.IsMinimumEdgePixel(input.screenUV))
     {
@@ -43,7 +43,7 @@ float4 ForwardPlusTilesPassFragment(Varyings input) : SV_TARGET
         //使用RP core 中和显示热图函数
         //像素坐标、图块大小、灯光数量、允许的最大值和不透明度
         color = OverlayHeatMap(input.screenUV * _CameraBufferSize.zw, tile.GetScreenSize(),
-                               tile.GetLightCount(), tile.GetMaxLightPerTile(), 1).rgb;
+                               tile.GetLightCount(), tile.GetMaxLightPerTile(), 1.0).rgb;
     }
     return float4(color, _DebugOpacity);
 }

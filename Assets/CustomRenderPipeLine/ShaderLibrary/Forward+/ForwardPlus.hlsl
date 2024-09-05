@@ -8,13 +8,14 @@ float4 _ForwardPlusTileSettings;
 
 StructuredBuffer<int> _ForwardPlusTiles;
 
-struct ForwardPlueTile
+struct ForwardPlusTile
 {
     int2 coordinates;
     int index;
 
     int GetTileDataSize()
     {
+        //return (_ForwardPlusTileSettings.w);
         return asint(_ForwardPlusTileSettings.w);
     }
 
@@ -30,6 +31,7 @@ struct ForwardPlueTile
 
     int GetFirstLightIndexInTile()
     {
+        //Tile针对其他光源 headerIndex中的数据总是为0(或者说为平行光，当然这里还没添加进去)
         return GetHeaderIndex() + 1;
     }
 
@@ -60,11 +62,15 @@ struct ForwardPlueTile
     }
 };
 
-ForwardPlueTile GetForwardPlusTile(float2 screenUV)
+ForwardPlusTile GetForwardPlusTile(float2 screenUV)
 {
-    ForwardPlueTile tile;
+    ForwardPlusTile tile;
     tile.coordinates = int2(screenUV * _ForwardPlusTileSettings.xy);
+    //asint将位模式解释为整数
     tile.index = tile.coordinates.y * asint(_ForwardPlusTileSettings.z) + tile.coordinates.x;
+    //tile.index = tile.coordinates.y * (_ForwardPlusTileSettings.z) + tile.coordinates.x;
+
+
     return tile;
 }
 

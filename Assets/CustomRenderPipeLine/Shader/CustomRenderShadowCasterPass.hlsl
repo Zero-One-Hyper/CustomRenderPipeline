@@ -49,10 +49,10 @@ half4 ShadowCasterFrag(ShadowCasterVaryings input) : SV_Target
 {
     UNITY_SETUP_INSTANCE_ID(input);
 
-    InputConfig inputConfig = GetInputConfig(input.uv);
+    InputConfig inputConfig = GetInputConfig(input.uv, input.positionCS);
     ClipLod(inputConfig.fragment, unity_LODFade.x);
 
-    half4 col = GetColor(GetInputConfig(input.uv));
+    half4 col = GetColor(GetInputConfig(input.uv, input.positionCS));
     #ifdef _ALPHATEST_ON
     #ifdef _CASCADE_BLEND_DITHER
     float dither = InterleavedGradientNoise(inputConfig.fragment.positionSS, 0);

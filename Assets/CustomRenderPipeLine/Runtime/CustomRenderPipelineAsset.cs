@@ -15,8 +15,8 @@ public partial class CustomRenderPipelineAsset : RenderPipelineAsset
     [SerializeField]
     private bool useLightsPerObject;
 
-    [Header("Deprecated Settings")]
     [SerializeField, Tooltip("Moved to setting")]
+    [HideInInspector]
     private CameraBufferSettings cameraBufferSettings = new CameraBufferSettings()
     {
         allowHDR = true,
@@ -63,6 +63,16 @@ public partial class CustomRenderPipelineAsset : RenderPipelineAsset
                 colorLutResolution = (CustomRenderPipelineSetting.ColorLUTResolution)colorLutResolution,
                 cameraRenderShader = cameraRendererShader,
             };
+        }
+
+        if (postFXSettings != null)
+        {
+            postFXSettings = null;
+        }
+
+        if (cameraRendererShader != null)
+        {
+            cameraRendererShader = null;
         }
 
         return new CustomRenderPipeline(_setting);

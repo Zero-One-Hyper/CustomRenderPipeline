@@ -112,6 +112,7 @@ public class CameraRender
             bufferSize.y = this._camera.pixelHeight;
         }
 
+        
         //设置FX堆栈及验证FXAA
         cameraBufferSettings.fxaa.enable &= cameraSettings.allowFXAA;
         //将是否使用中间纹理挪到setup外面来
@@ -139,7 +140,8 @@ public class CameraRender
 
             //rendergraph的过程
             //光照设置
-            LightResource lightResource = LightingPass.Recode(renderGraph, _cullingResults, shadowSettings,
+            LightResource lightResource = LightingPass.Recode(renderGraph,
+                _cullingResults, shadowSettings, setting.forwardPlusSettings,
                 useLightPerObject, cameraSettings.renderingLayerMask, bufferSize);
 
             //应在渲染常规几何体之前渲染阴影

@@ -47,12 +47,14 @@ struct InputConfig
     float2 detailUV;
 };
 
+/*
 InputConfig GetInputConfig(float2 baseUV)
 {
     InputConfig config = (InputConfig)0;
     config.baseUV = baseUV;
     return config;
 }
+*/
 
 InputConfig GetInputConfig(float2 baseUV, float4 positionCS, float2 detailUV = 0)
 {

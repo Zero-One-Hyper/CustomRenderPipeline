@@ -48,10 +48,13 @@ float3 GetAllLighting(Fragment fragment, Surface surface, BRDF brdf, GI gi)
         {            
             color += GetLighting(surface, brdf, light);
         }
+        //测试用返回值
+        return float3(0, 1, 1);
     }
     #else
-    ForwardPlueTile tile = GetForwardPlusTile(fragment.screenUV);
+    ForwardPlusTile tile = GetForwardPlusTile(fragment.screenUV);
     int lastLightIndex = tile.GetLastLightIndexInTile();
+    //从遍历所有灯光，每盏灯计算一边，变成了获取当前物体所在屏幕UV所在的屏幕块中 搜索这个屏幕块中的所有灯光
     //for (int j = 0; j < GetOtherLightCount(); j++)
     for (int j = tile.GetFirstLightIndexInTile(); j <= lastLightIndex; j++)
     {

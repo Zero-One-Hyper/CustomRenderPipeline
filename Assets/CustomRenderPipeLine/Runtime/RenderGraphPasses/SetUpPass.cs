@@ -46,9 +46,9 @@ public class SetUpPass
 
         //延迟设置Camera缓冲区大小到setup结束
         cmd.SetGlobalVector(_bufferSizeID, new Vector4(
-            1f / _attachmentSize.x, 1f / _attachmentSize.y,
+            1f / (float)_attachmentSize.x, 1f / (float)_attachmentSize.y,
             _attachmentSize.x, _attachmentSize.y));
-
+        
         context.renderContext.ExecuteCommandBuffer(cmd);
         context.cmd.Clear();
     }

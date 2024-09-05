@@ -20,7 +20,7 @@ Fragment GetFragment(float4 positionSS)
     Fragment f = (Fragment)0;
     f.positionSS = positionSS.xy;
     //f.screenUV = positionSS.xy / _ScreenParams.xy;
-    f.screenUV = positionSS.xy * _CameraBufferSize.xy; //替换_ScreenParamas
+    f.screenUV = positionSS * _CameraBufferSize.xy; //替换_ScreenParamas
     bool isOrthographicCamera = IsOrthographicCamera();
     f.depth = isOrthographicCamera ? OrthographicDepthBufferToLinear(positionSS.z) : positionSS.w;
     f.bufferDepth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_point_clamp, f.screenUV);
