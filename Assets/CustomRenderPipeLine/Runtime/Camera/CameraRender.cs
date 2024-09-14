@@ -112,14 +112,13 @@ public class CameraRender
             bufferSize.y = this._camera.pixelHeight;
         }
 
-        
+
         //设置FX堆栈及验证FXAA
         cameraBufferSettings.fxaa.enable &= cameraSettings.allowFXAA;
         //将是否使用中间纹理挪到setup外面来
         bool useIntermediateBuffer = useRenderScaledRendering || useColorTexture ||
                                      useDepthTexture || hasActivePostFX ||
                                      !useLightPerObject;
-
 
         var renderGraphParameters = new RenderGraphParameters()
         {
@@ -198,9 +197,9 @@ public class CameraRender
         }
 
         //在命令提交之前请求清理
-        context.ExecuteCommandBuffer(renderGraphParameters.commandBuffer);
+        context.ExecuteCommandBuffer(_commandBuffer);
         context.Submit();
-        CommandBufferPool.Release(renderGraphParameters.commandBuffer);
+        CommandBufferPool.Release(_commandBuffer);
     }
 
     public void Dispose()

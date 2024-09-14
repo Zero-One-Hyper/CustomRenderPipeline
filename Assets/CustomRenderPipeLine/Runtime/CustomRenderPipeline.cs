@@ -28,12 +28,6 @@ public partial class CustomRenderPipeline : RenderPipeline
 
     private readonly CustomRenderPipelineSetting _setting;
 
-    //private bool _useLightPerObject;
-    //private CameraBufferSettings _cameraBufferSettings;
-    //private ShadowSettings _shadowSettings;
-    //private PostFXSettings _postFXSettings;
-    //private int _colorLUTResolution;
-
     //RenderGraph 一种管理各个feature引用的资源及使用的pass 对渲染管线中存在的耦合问题进行解耦合
     private readonly RenderGraph _renderGraph = new RenderGraph("Custom SRP Render Graph");
 

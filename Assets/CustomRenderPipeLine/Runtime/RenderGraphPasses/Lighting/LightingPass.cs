@@ -14,11 +14,6 @@ public partial class LightingPass
     private const int MaxDirectionLightCount = 4;
     private const int MaxOtherLightCount = 128;
 
-    //转为使用设置配置
-    //private const int MaxLightsPerTile = 31;
-    //private const int TileDataSize = MaxLightsPerTile + 1;
-    //private const int TileScreenPixelSize = 64; 
-
     private CommandBuffer _lightBuffer;
 
     private static int _directionLightCountID = UnityEngine.Shader.PropertyToID("_DirectionLightCount");

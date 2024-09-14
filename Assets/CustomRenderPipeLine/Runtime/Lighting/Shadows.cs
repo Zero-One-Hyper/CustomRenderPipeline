@@ -334,9 +334,9 @@ public partial class Shadows
                 out Matrix4x4 viewMatrix, out Matrix4x4 projMatrix,
                 out ShadowSplitData shadowSplitData);
             //取反视图矩阵第二行 以保证shadowmap为正常的上下顺序 解决漏光的问题
-            viewMatrix.m11 = -viewMatrix.m11;
-            viewMatrix.m12 = -viewMatrix.m12;
-            viewMatrix.m13 = -viewMatrix.m13;
+            //viewMatrix.m11 = -viewMatrix.m11;
+            //viewMatrix.m12 = -viewMatrix.m12;
+            //viewMatrix.m13 = -viewMatrix.m13;
             //开启剔除偏移
             shadowSplitData.shadowCascadeBlendCullingFactor = cullFactor;
             //ShadowSplitData包括了关于投影物体如何被剔除的信息(阴影分割数据)
