@@ -7,6 +7,7 @@
 //3x3需要4个采样器铺满
 //5x5需要9个采样器铺满
 //7x7需要16个采样器铺满
+/*
 #if defined(_DIRECTIONAL_PCF3)
 #define DIRECTIONAL_FILTER_SAMPLES 4
 #define DIRECTIONAL_FILTER_SETUP SampleShadow_ComputeSamples_Tent_3x3
@@ -28,6 +29,25 @@
 #define OTHER_FILTER_SAMPLES 16
 #define OTHER_FILTER_SETUP SampleShadow_ComputeSamples_Tent_7x7
 #endif
+*/
+
+#if defined(_SHADOW_FILTER_HIGH)
+#define DIRECTIONAL_FILTER_SAMPLES 16
+#define DIRECTIONAL_FILTER_SETUP SampleShadow_ComputeSamples_Tent_7x7
+#define OTHER_FILTER_SAMPLES 16
+#define OTHER_FILTER_SETUP SampleShadow_ComputeSamples_Tent_7x7
+#elif defined (_SHADOW_FILTER_MEDIU)
+#define DIRECTIONAL_FILTER_SAMPLES 9
+#define DIRECTIONAL_FILTER_SETUP SampleShadow_ComputeSamples_Tent_5x5
+#define OTHER_FILTER_SAMPLES 9
+#define OTHER_FILTER_SETUP SampleShadow_ComputeSamples_Tent_5x5
+#else
+#define DIRECTIONAL_FILTER_SAMPLES 4
+#define DIRECTIONAL_FILTER_SETUP SampleShadow_ComputeSamples_Tent_3x3
+#define OTHER_FILTER_SAMPLES 4
+#define OTHER_FILTER_SETUP SampleShadow_ComputeSamples_Tent_3x3
+#endif
+
 
 //级联阴影
 #define MAX_SHADOW_CASCADE_COUNT 4
@@ -156,15 +176,14 @@ ShadowData GetShadowData(Surface surfaceWS)
     {
         data.strength = 0;
     }
-    #ifdef _CASCADE_BLEND_DITHER
+    #if !defined(_SOFT_CASCADE_BLEND)
     else if (data.cascadeBlend < surfaceWS.dither)
     {
         //使用抖动混合时，如果我们不在最后一个级联，在混合值小于抖动值时，跳到下一个级联。
         i += 1;
     }
-    #endif
-
-    #ifndef _CASCADE_BLEND_SOFT
+    //#endif
+    //#ifndef _CASCADE_BLEND_SOFT
     //不使用软阴影九八混合设置为1 使得GetDirectionalShadowAttenuation的if判断不通过
     data.cascadeBlend = 1.0;
     #endif

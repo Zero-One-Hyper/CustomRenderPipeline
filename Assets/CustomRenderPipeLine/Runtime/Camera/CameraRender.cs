@@ -34,7 +34,7 @@ public class CameraRender
         CameraBufferSettings cameraBufferSettings = setting.cameraBufferSettings;
         PostFXSettings postFXSettings = setting.postFXSettings;
         ShadowSettings shadowSettings = setting.shadowSettings;
-        bool useLightPerObject = setting.useLightPerObject;
+        //bool useLightPerObject = setting.useLightPerObject;
 
         ProfilingSampler cameraSampler;
         CameraSettings cameraSettings;
@@ -115,10 +115,9 @@ public class CameraRender
 
         //设置FX堆栈及验证FXAA
         cameraBufferSettings.fxaa.enable &= cameraSettings.allowFXAA;
-        //将是否使用中间纹理挪到setup外面来
-        bool useIntermediateBuffer = useRenderScaledRendering || useColorTexture ||
-                                     useDepthTexture || hasActivePostFX ||
-                                     !useLightPerObject;
+        //将是否使用中间纹理挪到setup外面来  默认一直使用中间纹理
+        //bool useIntermediateBuffer = useRenderScaledRendering || useColorTexture ||
+        //                             useDepthTexture || hasActivePostFX; //|| !useLightPerObject;
 
         var renderGraphParameters = new RenderGraphParameters()
         {
@@ -141,19 +140,19 @@ public class CameraRender
             //光照设置
             LightResource lightResource = LightingPass.Recode(renderGraph,
                 _cullingResults, shadowSettings, setting.forwardPlusSettings,
-                useLightPerObject, cameraSettings.renderingLayerMask, bufferSize);
+                cameraSettings.renderingLayerMask, bufferSize); //useLightPerObject, 
 
             //应在渲染常规几何体之前渲染阴影
             //设置摄像机参数
             CameraRendererTextures cameraRendererTextures =
-                SetUpPass.Recode(renderGraph, renderCamera, bufferSize, useIntermediateBuffer,
+                SetUpPass.Recode(renderGraph, renderCamera, bufferSize, //useIntermediateBuffer,
                     cameraBufferSettings.allowHDR,
                     useColorTexture, useDepthTexture);
 
             //将绘制命令存入命令缓存区中 绘制可见物体
             //绘制不透明物体
             GeometryPass.Recode(renderGraph, renderCamera, _cullingResults,
-                useLightPerObject, cameraSettings.renderingLayerMask, true,
+                cameraSettings.renderingLayerMask, true, //useLightPerObject,
                 cameraRendererTextures, lightResource);
 
             //绘制天空盒
@@ -168,7 +167,7 @@ public class CameraRender
 
             //绘制透明物体
             GeometryPass.Recode(renderGraph, renderCamera, _cullingResults,
-                useLightPerObject, cameraSettings.renderingLayerMask, false,
+                cameraSettings.renderingLayerMask, false, //useLightPerObject,
                 cameraRendererTextures, lightResource);
 
             //绘制不受支持的Shader 
@@ -185,7 +184,7 @@ public class CameraRender
                     (int)setting.colorLutResolution, cameraSettings.keepAlpha,
                     cameraRendererTextures);
             }
-            else if (useIntermediateBuffer)
+            else //if (useIntermediateBuffer)
             {
                 FinalPass.Record(renderGraph, copier, cameraRendererTextures);
             }
@@ -193,7 +192,7 @@ public class CameraRender
             DebugPass.Recode(renderGraph, setting, renderCamera, lightResource);
             //绘制gizmos后绘制后处理
             //后处理后绘制Gizmos(绘制gizmos的地方换到了RenderGraphy)
-            GizmosPass.Record(renderGraph, copier, cameraRendererTextures, useIntermediateBuffer);
+            GizmosPass.Record(renderGraph, copier, cameraRendererTextures); //, useIntermediateBuffer
         }
 
         //在命令提交之前请求清理

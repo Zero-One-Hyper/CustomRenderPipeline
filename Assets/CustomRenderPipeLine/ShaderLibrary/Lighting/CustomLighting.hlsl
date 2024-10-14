@@ -39,19 +39,19 @@ float3 GetAllLighting(Fragment fragment, Surface surface, BRDF brdf, GI gi)
             color += GetLighting(surface, brdf, light);
         }
     }
-    #ifdef _LIGHTS_PER_OBJECT
-    for (int j = 0; j < min(unity_LightData.y, 8); j++)//这里做一个数量限制 提供的的灯光计数可能超过8
-    {
-        int lightIndex = unity_LightIndices[j / 4][j % 4];
-        Light light = GetOtherLight(lightIndex, surface, shadowData);
-        if (RenderingLayersOverlap(surface, light))
-        {            
-            color += GetLighting(surface, brdf, light);
-        }
-        //测试用返回值
-        return float3(0, 1, 1);
-    }
-    #else
+    //#ifdef _LIGHTS_PER_OBJECT
+    //for (int j = 0; j < min(unity_LightData.y, 8); j++)//这里做一个数量限制 提供的的灯光计数可能超过8
+    //{
+    //    int lightIndex = unity_LightIndices[j / 4][j % 4];
+    //    Light light = GetOtherLight(lightIndex, surface, shadowData);
+    //    if (RenderingLayersOverlap(surface, light))
+    //    {            
+    //        color += GetLighting(surface, brdf, light);
+    //    }
+    //    //测试用返回值
+    //    return float3(0, 1, 1);
+    //}
+    //#else
     ForwardPlusTile tile = GetForwardPlusTile(fragment.screenUV);
     int lastLightIndex = tile.GetLastLightIndexInTile();
     //从遍历所有灯光，每盏灯计算一边，变成了获取当前物体所在屏幕UV所在的屏幕块中 搜索这个屏幕块中的所有灯光
@@ -64,7 +64,7 @@ float3 GetAllLighting(Fragment fragment, Surface surface, BRDF brdf, GI gi)
             color += GetLighting(surface, brdf, light);
         }
     }
-    #endif
+    //#endif
     return color;
 }
 

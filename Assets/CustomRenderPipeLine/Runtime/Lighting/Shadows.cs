@@ -73,6 +73,8 @@ public partial class Shadows
     private ComputeBufferHandle _directionShadowCascadesBuffer;
     private ComputeBufferHandle _directionShadowMatricesBuffer;
 
+    /*
+    //变为用filier quality控制阴影过度
     //软阴影过滤模式着色器变体
     //平行光
     private static GlobalKeyword[] _directionalLightFilterKeyWords =
@@ -89,13 +91,22 @@ public partial class Shadows
         GlobalKeyword.Create("_OTHER_PCF5"),
         GlobalKeyword.Create("_OTHER_PCF7")
     };
+    */
+    private static GlobalKeyword[] _filterQualityKeyWords =
+    {
+        GlobalKeyword.Create("_SHADOW_FILTER_MEDIUM"),
+        GlobalKeyword.Create("_SHADOW_FILTER_HIGH"),
+    };
 
     //切换软阴影和抖动混合关键字
+    /*
     private static GlobalKeyword[] _cascadeBlendKeyWords =
     {
         GlobalKeyword.Create("_CASCADE_BLEND_SOFT"),
         GlobalKeyword.Create("_CASCADE_BLEND_DITHER")
     };
+    */
+    private static GlobalKeyword _softCascadeBlendKeyWord = GlobalKeyword.Create("_SOFT_CASCADE_BLEND");
 
     //切换阴影遮罩关键子
     private static GlobalKeyword[] _shadowMaskKeyWords =
@@ -135,6 +146,8 @@ public partial class Shadows
             RenderOtherShadows();
         }
 
+        //设置过滤模式 阴影质量变体 
+        SetShadowKeyWorlds(_filterQualityKeyWords, (int)_shadowSettings.filterQuality - 1);
 
         //转移了 在render时才设置buffer
         _shadowBuffer.SetGlobalBuffer(_directionShadowCascadeID, _directionShadowCascadesBuffer);
@@ -256,10 +269,11 @@ public partial class Shadows
             _shadowDirectionalLightCount * _shadowSettings.directionalLight.cascadeCount);
         //_shadowBuffer.SetGlobalBuffer(_dirShadowMatricesID, _directionShadowMatricesBuffer);
 
-        //过滤模式keywords只有3个
-        SetShadowKeyWorlds(_directionalLightFilterKeyWords, (int)_shadowSettings.directionalLight.filter - 1);
+        //过滤模式keywords只有3个  移到Render中处理
+        //SetShadowKeyWorlds(_directionalLightFilterKeyWords, (int)_shadowSettings.directionalLight.filter - 1);
         //软阴影 和 抖动混合 的keyWorld 
-        SetShadowKeyWorlds(_cascadeBlendKeyWords, (int)_shadowSettings.directionalLight.cascadeBlend - 1);
+        //SetShadowKeyWorlds(_cascadeBlendKeyWords, (int)_shadowSettings.directionalLight.cascadeBlend - 1);
+        _shadowBuffer.SetKeyword(_softCascadeBlendKeyWord, _shadowSettings.directionalLight.softShadowBlend);
         _shadowBuffer.EndSample("Directional Shadows");
         ExecuteBuffer();
     }
@@ -303,8 +317,8 @@ public partial class Shadows
             0, 0, _shadowOtherLightCount);
         //_shadowBuffer.SetGlobalBuffer(_otherShadowDataID, _otherShadowDataBuffer);
 
-        //过滤模式keyworlds只有3个
-        SetShadowKeyWorlds(_otherLightFilterKeyWords, (int)_shadowSettings.otherLight.filterMode - 1);
+        //过滤模式keyworlds只有3个 移到Render中处理
+        //SetShadowKeyWorlds(_otherLightFilterKeyWords, (int)_shadowSettings.otherLight.filterMode - 1);
         _shadowBuffer.EndSample("Other Shadows");
         ExecuteBuffer();
     }
@@ -349,7 +363,7 @@ public partial class Shadows
                 //每个光源的级联都是等价的  只用做一次
                 _directionShadowCascades[i] = new DirectionShadowCascade(
                     shadowSplitData.cullingSphere, tileSize,
-                    _shadowSettings.directionalLight.filter);
+                    _shadowSettings.DirectionalFilterSize);
             }
 
             int tileIndex = tileOffset + i;
@@ -392,7 +406,9 @@ public partial class Shadows
         //对于聚光灯 在距离为1的平面上采样的纹素大小是2*tan(spot角一半)
         //这与透视阴影匹配  ......等看你懂了投影矩阵这块也许就懂了......
         float texelSize = 2.0f / (tileSize * projMatrix.m00);
-        float filterSize = texelSize * ((float)_shadowSettings.otherLight.filterMode + 1);
+        //float filterSize = texelSize * ((float)_shadowSettings.otherLight.filterMode + 1);
+        float filterSize = texelSize * _shadowSettings.OtherFilterSize;
+
         float bias = shadowedOtherLight.normalBias * filterSize * 1.414f;
         Vector2 offset = SetTileViewport(lightIndex, split, tileSize);
         float tileScale = 1.0f / split;
@@ -418,7 +434,9 @@ public partial class Shadows
         };
 
         float texelSize = 2.0f / tileSize; //cubmap单位tile大小固定
-        float filterSize = texelSize * ((float)_shadowSettings.otherLight.filterMode + 1);
+        //float filterSize = texelSize * ((float)_shadowSettings.otherLight.filterMode + 1);
+        float filterSize = texelSize * _shadowSettings.OtherFilterSize;
+
         float bias = shadowedOtherLight.normalBias * filterSize * 1.414f;
         float tileScale = 1.0f / split;
         //点光源需要渲染6次 是一张CubMap

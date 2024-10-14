@@ -29,9 +29,11 @@ public partial class CustomRenderPipelineAsset : RenderPipelineAsset
         },
     };
 
+    [HideInInspector]
     [SerializeField]
     private ShadowSettings shadowSettings = default;
 
+    [HideInInspector]
     [SerializeField]
     private PostFXSettings postFXSettings = default;
 
@@ -42,9 +44,11 @@ public partial class CustomRenderPipelineAsset : RenderPipelineAsset
         _64 = 64,
     }
 
+    [HideInInspector]
     [SerializeField]
     private ColorLUTResolution colorLutResolution = ColorLUTResolution._32;
 
+    [HideInInspector]
     [SerializeField]
     private UnityEngine.Shader cameraRendererShader = default;
 

@@ -13,13 +13,14 @@ public partial class Shadows
         public Vector4 cascadeData;
 
         public DirectionShadowCascade(Vector4 cullingSphere, float tileSize,
-            ShadowSettings.FilterMode filterMode)
+            float filterSize)
         {
             //把求级联阴影倒数部分放到C#来做
             //_cascadeData[index].x = 1.0f / cullingSphere.w;
             //只考虑单个维度的话，沿表面法相偏移进行阴影采样 只需偏移世界空间下纹素大小
             float texelSize = 2.0f * cullingSphere.w / tileSize;
-            float filterSize = texelSize * ((float)filterMode + 1.0f); //使用PCF的过滤等级自动调整偏移
+            //float filterSize = texelSize * ((float)filterMode + 1.0f); //使用PCF的过滤等级自动调整偏移
+            filterSize *= texelSize;
             //先在C#中计算平方 （本来需要在在着色器中计算表面与球心距离的平方及半径的平方）
             cullingSphere.w -= texelSize;
             cullingSphere.w *= cullingSphere.w;

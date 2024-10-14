@@ -36,7 +36,7 @@ public class GeometryPass
     //这里弃用了useDynamicBatching 和 useGPUInstancing
     //使用RenderGraph时动态批处理会被始终禁用 GPU实例化会始终开启
     public static void Recode(RenderGraph renderGraph, Camera renderCamera, CullingResults cullingResults,
-        bool useLightsPerObject, int renderingLayerMask, bool isOpaque,
+        int renderingLayerMask, bool isOpaque, //bool useLightsPerObject,
         in CameraRendererTextures rendererTextures, in LightResource lightResource)
     {
         ProfilingSampler sampler = isOpaque ? _geometryOpaqueSampler : _geometryTransparentSampler;
@@ -54,10 +54,10 @@ public class GeometryPass
                                         PerObjectData.LightProbe | PerObjectData.LightProbeProxyVolume |
                                         PerObjectData.OcclusionProbe |
                                         PerObjectData.OcclusionProbeProxyVolume | //光照探针的阴影遮罩数据
-                                        PerObjectData.ShadowMask |
+                                        PerObjectData.ShadowMask /*|
                                         (useLightsPerObject
                                             ? PerObjectData.LightData | PerObjectData.LightIndices
-                                            : PerObjectData.None),
+                                            : PerObjectData.None)*/,
                 renderQueueRange = isOpaque ? RenderQueueRange.opaque : RenderQueueRange.transparent,
                 renderingLayerMask = (uint)renderingLayerMask,
             });

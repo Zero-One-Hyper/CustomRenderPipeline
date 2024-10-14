@@ -11,8 +11,9 @@ CBUFFER_START(UnityPerDraw)
     real4 unity_WorldTransformParams;
     float4 unity_RenderingLayer; //渲染层掩码
 
-    real4 unity_LightData;
-    real4 unity_LightIndices[2]; //两个向量的每个通道都包含一个光索引 因此每个对象最多支持8个
+    //用于著对象光照
+    //real4 unity_LightData;
+    //real4 unity_LightIndices[2]; //两个向量的每个通道都包含一个光索引 因此每个对象最多支持8个
 
     //unity光照贴图UV
     float4 unity_LightmapST;

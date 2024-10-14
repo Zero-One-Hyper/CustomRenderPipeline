@@ -4,6 +4,13 @@ using UnityEngine;
 [Serializable]
 public class ShadowSettings
 {
+    public enum FilterQuality
+    {
+        Low,
+        Medium,
+        High,
+    }
+
     //PCF 百分比渐进过滤 用于软阴影
     public enum FilterMode
     {
@@ -34,7 +41,11 @@ public class ShadowSettings
         }
 
         public TextureSize atlasSize;
+
+        [Header("Deprecated Settings"), Tooltip("Use new boolean toggle.")]
         public FilterMode filter;
+
+        public bool softShadowBlend;
 
         [Range(1, 4)]
         public int cascadeCount;
@@ -53,6 +64,7 @@ public class ShadowSettings
         [Range(0.0001f, 1)]
         public float cascadeFade; //淡化级联
 
+        [Header("Deprecated Settings"), Tooltip("Use new boolean toggle.")]
         public CascadeBlendMode cascadeBlend;
 
         public Vector3 CascadeRatios => new Vector3(cascadeRatio1, cascadeRatio2, cascadeRatio3);
@@ -71,10 +83,12 @@ public class ShadowSettings
     [Range(0.00001f, 1)]
     public float shadowDistanceFade;
 
+    public FilterQuality filterQuality = FilterQuality.Medium;
+
     public Directional directionalLight = new Directional()
     {
         atlasSize = TextureSize._1024,
-        filter = FilterMode.PCF2x2,
+        //filter = FilterMode.PCF2x2,
         cascadeCount = 4,
         cascadeRatio1 = 0.1f,
         cascadeRatio2 = 0.25f,
@@ -88,4 +102,7 @@ public class ShadowSettings
         atlasSize = TextureSize._1024,
         filterMode = FilterMode.PCF5x5,
     };
+
+    public float DirectionalFilterSize => (float)filterQuality + 2f;
+    public float OtherFilterSize => (float)filterQuality + 2f;
 }

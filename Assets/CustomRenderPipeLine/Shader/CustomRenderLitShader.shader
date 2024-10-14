@@ -93,12 +93,14 @@ Shader "Custom/CustomRenderPipeLine/LitShader"
             #pragma shader_feature_fragment _ _PREMULTIPLYALPHA_ON
             //软阴影采样大小
             //平行光
-            #pragma multi_compile _ _DIRECTIONAL_PCF3 _DIRECTIONAL_PCF5 _DIRECTIONAL_PCF7
+            //#pragma multi_compile _ _DIRECTIONAL_PCF3 _DIRECTIONAL_PCF5 _DIRECTIONAL_PCF7
             //其他光源 点光源及聚光灯
-            #pragma multi_compile _ _OTHER_PCF3 _OTHER_PCF5 _OTHER_PCF7
+            //#pragma multi_compile _ _OTHER_PCF3 _OTHER_PCF5 _OTHER_PCF7
+            #pragma multi_compile _ _SHADOW_FILTER_MEDIUM _SHADOW_FILTER_HIGH
 
-            //软阴影、抖动混合
-            #pragma multi_compile _  _CASCADE_BLEND_SOFT _CASCADE_BLEND_DITHER
+            //软阴影、抖动混合 (软阴影)
+            //#pragma multi_compile _  _CASCADE_BLEND_SOFT _CASCADE_BLEND_DITHER
+            #pragma multi_compile _ _SOFT_CASCADE_BLEND
 
             //光照贴图
             #pragma multi_compile _ LIGHTMAP_ON
@@ -106,7 +108,7 @@ Shader "Custom/CustomRenderPipeLine/LitShader"
             #pragma multi_compile _ _SHADOW_MASK_ALWAYS _SHADOW_MASK_DISTANCE
 
             //著对象光照 使用灯光索引
-            #pragma multi_compile _ _LIGHTS_PER_OBJECT
+            //#pragma multi_compile _ _LIGHTS_PER_OBJECT
 
             //LOD级别的交叉混合
             #pragma multi_compile _ LOD_FADE_CROSSFADE
@@ -137,7 +139,7 @@ Shader "Custom/CustomRenderPipeLine/LitShader"
             HLSLPROGRAM
             //#pragma target 3.5
             #pragma target 4.5
-            
+
             #pragma multi_compile _ _CASCADE_BLEND_DITHER
             #pragma multi_compile _ LOD_FADE_CROSSFADE
 

@@ -35,9 +35,11 @@ MonoBehaviour:
     shadowSettings:
       maxDistance: 1000
       shadowDistanceFade: 0.527
+      filterQuality: 1
       directionalLight:
         atlasSize: 4096
         filter: 2
+        softShadowBlend: 0
         cascadeCount: 4
         cascadeRatio1: 0.1
         cascadeRatio2: 0.25
@@ -70,9 +72,11 @@ MonoBehaviour:
   shadowSettings:
     maxDistance: 1000
     shadowDistanceFade: 0.527
+    filterQuality: 1
     directionalLight:
       atlasSize: 4096
       filter: 2
+      softShadowBlend: 0
       cascadeCount: 4
       cascadeRatio1: 0.1
       cascadeRatio2: 0.25
