@@ -1,6 +1,6 @@
 using UnityEngine;
 using Unity.Collections;
-using UnityEngine.Experimental.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 using Unity.Jobs;
 using Unity.Burst;
@@ -46,9 +46,9 @@ public partial class LightingPass
     private Shadows _shadows = new Shadows();
 
     //要让renderGraph管理计算缓冲 使用computerbufferHandle
-    private ComputeBufferHandle _directionLightDataBuffer;
-    private ComputeBufferHandle _otherLightDataBuffer;
-    private ComputeBufferHandle _tilesBuffer;
+    private BufferHandle _directionLightDataBuffer;
+    private BufferHandle _otherLightDataBuffer;
+    private BufferHandle _tilesBuffer;
 
     //使用来收集所有可见光的屏幕空间UV边界，用于确定光线覆盖了屏幕的那个区域
     private NativeArray<float4> _lightBounds;
@@ -72,29 +72,29 @@ public partial class LightingPass
         lightingPass.SetUp(cullingResults, shadowSettings, forwardPlusSettings,
             attachmentSize, renderingLayerMask); //, useLightsPerObjects);
         //用RenderGraph管理计算缓冲区
-        lightingPass._directionLightDataBuffer = builder.WriteComputeBuffer(
-            renderGraph.CreateComputeBuffer(new ComputeBufferDesc
+        lightingPass._directionLightDataBuffer = builder.WriteBuffer(
+            renderGraph.CreateBuffer(new BufferDesc(MaxDirectionLightCount, DirectionalLightData.Stride)
             {
                 name = "Direction Light Data",
-                count = MaxDirectionLightCount,
-                stride = DirectionalLightData.Stride,
+                //count = MaxDirectionLightCount,
+                //stride = DirectionalLightData.Stride,
             }));
-        lightingPass._otherLightDataBuffer = builder.WriteComputeBuffer(
-            renderGraph.CreateComputeBuffer(new ComputeBufferDesc
+        lightingPass._otherLightDataBuffer = builder.WriteBuffer(
+            renderGraph.CreateBuffer(new BufferDesc(MaxOtherLightCount, OtherLightData.Stride)
             {
                 name = "Other Light Data",
-                count = MaxOtherLightCount,
-                stride = OtherLightData.Stride,
+                //count = MaxOtherLightCount,
+                //stride = OtherLightData.Stride,
             }));
 
         //if (!useLightsPerObjects)
         //{
-        lightingPass._tilesBuffer = builder.WriteComputeBuffer(
-            renderGraph.CreateComputeBuffer(new ComputeBufferDesc
+        lightingPass._tilesBuffer = builder.WriteBuffer(
+            renderGraph.CreateBuffer(new BufferDesc(lightingPass.TileCount * lightingPass._maxTileDataSize, 4)
             {
                 name = "Forward+ Tiles",
-                count = lightingPass.TileCount * lightingPass._maxTileDataSize,
-                stride = 4,
+                //count = lightingPass.TileCount * lightingPass._maxTileDataSize,
+                //stride = 4,
             }));
         //}
 

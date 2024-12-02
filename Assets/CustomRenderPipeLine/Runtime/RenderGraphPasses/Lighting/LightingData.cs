@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Unity.Collections;
-using UnityEngine.Experimental.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 
 public partial class LightingPass
