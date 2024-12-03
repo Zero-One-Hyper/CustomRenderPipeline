@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Experimental.Rendering.RenderGraphModule; //使用实验性功能 renderGraph
+using UnityEngine.Rendering.RenderGraphModule; //使用实验性功能 renderGraph
 
 public partial class CustomRenderPipeline : RenderPipeline
 {

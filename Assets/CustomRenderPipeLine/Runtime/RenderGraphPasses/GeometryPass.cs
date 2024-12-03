@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.Experimental.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
 
@@ -82,19 +82,19 @@ public class GeometryPass
             }
         }
 
-        builder.ReadComputeBuffer(lightResource.directionLightDataBuffer);
-        builder.ReadComputeBuffer(lightResource.otherLightDataBuffer);
-        if (lightResource.tilesBuffer.IsValid())
-        {
-            builder.ReadComputeBuffer(lightResource.tilesBuffer);
-        }
+        builder.ReadBuffer(lightResource.directionLightDataBuffer);
+        builder.ReadBuffer(lightResource.otherLightDataBuffer);
+        //if (lightResource.tilesBuffer.IsValid())
+        //{
+        builder.ReadBuffer(lightResource.tilesBuffer);
+        //}
 
         //获取阴影贴图 这里就是只要配置了才会使用(不错的资源管理方式)
         builder.ReadTexture(lightResource.shadowResource.directionalAtlas);
         builder.ReadTexture(lightResource.shadowResource.otherAtlas);
-        builder.ReadComputeBuffer(lightResource.shadowResource.directionShadowCascadesBuffer);
-        builder.ReadComputeBuffer(lightResource.shadowResource.directionShadowMatricesBuffer);
-        builder.ReadComputeBuffer(lightResource.shadowResource.otherShadowDataBuffer);
+        builder.ReadBuffer(lightResource.shadowResource.directionShadowCascadesBuffer);
+        builder.ReadBuffer(lightResource.shadowResource.directionShadowMatricesBuffer);
+        builder.ReadBuffer(lightResource.shadowResource.otherShadowDataBuffer);
 
         builder.SetRenderFunc<GeometryPass>(
             static (pass, context) => pass.Render(context));

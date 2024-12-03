@@ -37,7 +37,7 @@ public partial class CustomRenderPipeline
                         LightmapperUtils.Extract(light, ref pointLight);
                         lightData.Init(ref pointLight);
                         break;
-                    case UnityEngine.LightType.Area:
+                    case UnityEngine.LightType.Rectangle:
                         var rectangleLight = new RectangleLight();
                         LightmapperUtils.Extract(light, ref rectangleLight);
                         rectangleLight.mode = LightMode.Baked; //暂时不支持区域实时光照

@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.Experimental.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 
 public partial class Shadows
@@ -69,9 +69,9 @@ public partial class Shadows
     private static readonly OtherShadowData[] OtherShadowDatas = new OtherShadowData[MaxShadowsOtherLightCount];
 
 
-    private ComputeBufferHandle _otherShadowDataBuffer;
-    private ComputeBufferHandle _directionShadowCascadesBuffer;
-    private ComputeBufferHandle _directionShadowMatricesBuffer;
+    private BufferHandle _otherShadowDataBuffer;
+    private BufferHandle _directionShadowCascadesBuffer;
+    private BufferHandle _directionShadowMatricesBuffer;
 
     /*
     //变为用filier quality控制阴影过度
@@ -189,19 +189,19 @@ public partial class Shadows
         _directionalShadowAtlas = _shadowDirectionalLightCount > 0
             ? builder.WriteTexture(renderGraph.CreateTexture(desc))
             : renderGraph.defaultResources.defaultShadowTexture;
-        _directionShadowCascadesBuffer = builder.WriteComputeBuffer(
-            renderGraph.CreateComputeBuffer(new ComputeBufferDesc
+        _directionShadowCascadesBuffer = builder.WriteBuffer(
+            renderGraph.CreateBuffer(new BufferDesc(MaxCascades, DirectionShadowCascade.Stride)
             {
                 name = "Direction Light Shadow Cascades",
-                stride = DirectionShadowCascade.Stride,
-                count = MaxCascades,
+                //stride = DirectionShadowCascade.Stride,
+                //count = MaxCascades,
             }));
-        _directionShadowMatricesBuffer = builder.WriteComputeBuffer(
-            renderGraph.CreateComputeBuffer(new ComputeBufferDesc
+        _directionShadowMatricesBuffer = builder.WriteBuffer(
+            renderGraph.CreateBuffer(new BufferDesc(MaxShadowsDirectionLightCount * MaxCascades, 4 * 16)
             {
                 name = "Direction Light Shadow Matrix",
-                stride = 4 * 16,
-                count = MaxShadowsDirectionLightCount * MaxCascades,
+                //stride = 4 * 16,
+                //count = MaxShadowsDirectionLightCount * MaxCascades,
             }));
 
         atlasSize = (int)_shadowSettings.otherLight.atlasSize;
@@ -212,12 +212,13 @@ public partial class Shadows
             ? builder.WriteTexture(renderGraph.CreateTexture(desc))
             : renderGraph.defaultResources.defaultShadowTexture;
 
-        _otherShadowDataBuffer = builder.WriteComputeBuffer(
-            renderGraph.CreateComputeBuffer(new ComputeBufferDesc
+        _otherShadowDataBuffer = builder.WriteBuffer(
+            renderGraph.CreateBuffer(new BufferDesc(MaxShadowsOtherLightCount,
+                OtherShadowData.Stride)
             {
                 name = "Other Shadow Data",
-                stride = OtherShadowData.Stride,
-                count = MaxShadowsOtherLightCount,
+                //stride = OtherShadowData.Stride,
+                //count = MaxShadowsOtherLightCount,
             }));
 
         return new ShadowResource(_directionalShadowAtlas, _otherShadowAtlas,
