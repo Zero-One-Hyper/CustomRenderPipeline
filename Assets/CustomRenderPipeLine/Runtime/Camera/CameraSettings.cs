@@ -12,8 +12,11 @@ public class CameraSettings
     public bool copyDepth = true;
 
     //相机的掩码只会在Game窗口才看得见
-    [RenderingLayerMaskField]
+    [HideInInspector]
+    [Obsolete("使用新的RenderLayerMask替代")]
     public int renderingLayerMask = -1;
+
+    public RenderingLayerMask newRenderLayerMask;
 
     //每个摄像机的灯光mask //开启后通过配置Layermask不同摄像机可以有不同的灯光效果
     public bool maskLights = false;

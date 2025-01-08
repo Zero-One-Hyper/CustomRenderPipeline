@@ -65,7 +65,7 @@ public partial class LightingPass
 
     public static LightResource Recode(RenderGraph renderGraph,
         CullingResults cullingResults, ShadowSettings shadowSettings, ForwardPlusSettings forwardPlusSettings,
-        int renderingLayerMask, Vector2Int attachmentSize) //bool useLightsPerObjects,
+        int renderingLayerMask, Vector2Int attachmentSize, ScriptableRenderContext context) //bool useLightsPerObjects,
     {
         using RenderGraphBuilder builder = renderGraph.AddRenderPass(
             "Lighting Setup", out LightingPass lightingPass, _lightingSampler);
@@ -105,7 +105,7 @@ public partial class LightingPass
         return new LightResource(lightingPass._directionLightDataBuffer,
             lightingPass._otherLightDataBuffer,
             lightingPass._tilesBuffer,
-            lightingPass.GetShadowTextures(renderGraph, builder));
+            lightingPass.GetShadowTextures(renderGraph, builder, context));
     }
 
     private void Render(RenderGraphContext context)
@@ -291,9 +291,9 @@ public partial class LightingPass
         }
     }
 
-    private ShadowResource GetShadowTextures(RenderGraph renderGraph, RenderGraphBuilder builder)
+    private ShadowResource GetShadowTextures(RenderGraph renderGraph, RenderGraphBuilder builder, ScriptableRenderContext context)
     {
-        return _shadows.GetResources(renderGraph, builder);
+        return _shadows.GetResources(renderGraph, builder, context);
     }
 
     private void SetUpForwardPlus(int lightIndex, ref VisibleLight visibleLight)

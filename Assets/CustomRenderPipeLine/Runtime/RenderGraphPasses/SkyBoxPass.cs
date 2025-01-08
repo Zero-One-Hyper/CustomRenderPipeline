@@ -6,15 +6,18 @@ public class SkyBoxPass
 {
     private static ProfilingSampler _skyBoxSampler = new ProfilingSampler("SkyBox Sampler");
 
-    private Camera _camera;
+    //private Camera _camera;
 
     private RendererListHandle _skyBoxListHandle;
 
     private void Render(RenderGraphContext context)
     {
+        //context.renderContext.ExecuteCommandBuffer(context.cmd);
+        //context.cmd.Clear();
+        //context.renderContext.DrawSkybox(_camera);
+        context.cmd.DrawRendererList(_skyBoxListHandle);
         context.renderContext.ExecuteCommandBuffer(context.cmd);
         context.cmd.Clear();
-        context.renderContext.DrawSkybox(_camera);
     }
 
     public static void Recode(RenderGraph renderGraph, Camera renderCamera,
@@ -24,7 +27,9 @@ public class SkyBoxPass
         {
             using RenderGraphBuilder builder = renderGraph.AddRenderPass(
                 "Draw SkyBox", out SkyBoxPass skyBoxPass, _skyBoxSampler);
-            skyBoxPass._camera = renderCamera;
+            //skyBoxPass._camera = renderCamera;
+            skyBoxPass._skyBoxListHandle = builder.UseRendererList(renderGraph.CreateSkyboxRendererList(renderCamera));
+            builder.AllowPassCulling(false);
             //天空盒需要读写颜色，读深度 不需要写深度
             builder.ReadWriteTexture(rendererTextures.colorAttachment);
             builder.ReadTexture(rendererTextures.depthAttachment);

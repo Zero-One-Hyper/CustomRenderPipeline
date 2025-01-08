@@ -13,8 +13,7 @@ public class DebugPass
     public static void Recode(RenderGraph renderGraph, CustomRenderPipelineSetting setting,
         Camera renderCamera, in LightResource lightResource)
     {
-        if (CameraDebugger.IsActive && renderCamera.cameraType < CameraType.SceneView &&
-            !setting.useLightPerObject)
+        if (CameraDebugger.IsActive && renderCamera.cameraType < CameraType.SceneView)// && !setting.useLightPerObject)
         {
             using RenderGraphBuilder builder = renderGraph.AddRenderPass(
                 Sampler.name, out DebugPass debugPass, Sampler);

@@ -49,6 +49,19 @@ public class CameraRender
             cameraSettings = _defaultCameraSettings;
         }
 
+#if UNITY_EDITOR
+#pragma warning disable 0618
+        if (cameraSettings.renderingLayerMask != 0)
+        {
+            cameraSettings.newRenderLayerMask = (uint)cameraSettings.renderingLayerMask;
+            cameraSettings.renderingLayerMask = 0;
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
+                UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene()
+            );
+        }
+#pragma warning restore 0618
+#endif
+
         bool useColorTexture;
         bool useDepthTexture;
         if (this._camera.cameraType == CameraType.Reflection)
@@ -143,7 +156,7 @@ public class CameraRender
             //光照设置
             LightResource lightResource = LightingPass.Recode(renderGraph,
                 _cullingResults, shadowSettings, setting.forwardPlusSettings,
-                cameraSettings.renderingLayerMask, bufferSize); //useLightPerObject, 
+                cameraSettings.renderingLayerMask, bufferSize, context); //useLightPerObject, 
 
             //应在渲染常规几何体之前渲染阴影
             //设置摄像机参数

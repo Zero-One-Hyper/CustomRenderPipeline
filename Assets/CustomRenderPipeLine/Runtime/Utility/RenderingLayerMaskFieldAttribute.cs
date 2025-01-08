@@ -8,6 +8,7 @@ public class RenderingLayerMaskFieldAttribute : PropertyAttribute
 {
 }
 
+/* 换成了unity6的新RenderingLayerMask  不再需要在Editor夏通过RenderingLayerMaskDrawer绘制层级关系
 [CustomPropertyDrawer(typeof(RenderingLayerMaskFieldAttribute))]
 public class RenderingLayerMaskDrawer : PropertyDrawer
 {
@@ -42,3 +43,4 @@ public class RenderingLayerMaskDrawer : PropertyDrawer
         Draw(position, property, label);
     }
 }
+*/

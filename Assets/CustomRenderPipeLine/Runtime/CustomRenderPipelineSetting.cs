@@ -40,9 +40,11 @@ public class CustomRenderPipelineSetting
 
     public ForwardPlusSettings forwardPlusSettings;
 
+    /*
     [Header("Deprecated Settings")]
     [Tooltip("Deprecated, lights-per-object drawing mode will be removed.")]
     public bool useLightPerObject = true;
+    */
 
     /*
     [SerializeField]//使用RenderGraph时GPU实例化会始终开启

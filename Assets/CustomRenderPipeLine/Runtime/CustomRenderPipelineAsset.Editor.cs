@@ -1,3 +1,6 @@
+
+
+/*  使用了unity6新的RenderLayerMask 可以不再会出现掩码问题了
 public partial class CustomRenderPipelineAsset
 {
 #if UNITY_EDITOR
@@ -13,7 +16,8 @@ public partial class CustomRenderPipelineAsset
         }
     }
 
-    public override string[] renderingLayerMaskNames => _renderLayerNames;
+    //public override string[] renderingLayerMaskNames => _renderLayerNames;//不再需要
 
 #endif
 }
+*/

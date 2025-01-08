@@ -1,3 +1,4 @@
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
 public readonly ref struct LightResource
